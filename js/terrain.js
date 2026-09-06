@@ -8,7 +8,7 @@
 
   const TILE = 512;                 // px por región (32 chunks x 16 px)
   const MAX_CACHE = 80;             // teselas guardadas, sumando los dos modos
-  const MAX_QUEUE = 48;             // regiones pedidas de una vez
+  const MAX_QUEUE = 32;             // regiones en cola a la vez (cola corta = reordena rápido)
 
   const state = {
     workers: [],
@@ -137,32 +137,57 @@
   function mode() { return state.mode; }
 
   /*
-   * Pide las regiones visibles. `regions` llega ordenada por cercanía al
-   * centro de la vista, así se rellena antes lo que se está mirando.
+   * Pide las regiones visibles. `regions` llega ordenada por cercanía al centro
+   * de la vista y con esa distancia en `d`, que hace de prioridad en la cola.
+   * En cada llamada se reordena lo que sigue pendiente y se descarta lo que ha
+   * salido de pantalla: así lo que se está mirando se dibuja siempre primero.
    */
   function request(regions) {
     if (!state.dim || !state.dim.regions || !start()) return;
     const m = state.mode;
     const biomeY = biomeYFor(state.dim);
-    const keep = new Set(regions.map((r) => tileKey(r.rx, r.rz, m)));
+    const keep = new Set();
+    const want = new Map();            // clave -> prioridad (menor = antes)
+    for (let i = 0; i < regions.length; i++) {
+      const r = regions[i];
+      const k = tileKey(r.rx, r.rz, m);
+      keep.add(k);
+      want.set(k, r.d != null ? r.d : i);
+    }
+
+    // Lo que ha salido de pantalla pierde su turno; lo que sigue se reordena.
+    let dropped = 0;
+    const kept = [];
+    for (const job of state.queue) {
+      const prio = want.get(job.key);
+      if (prio === undefined) { state.pending.delete(job.key); dropped++; continue; }
+      job.d = prio;
+      kept.push(job);
+    }
+    if (dropped) { state.queue = kept; state.total -= dropped; }
+
     let added = 0;
     for (const r of regions) {
-      if (added >= MAX_QUEUE) break;
+      if (state.queue.length >= MAX_QUEUE) break;
       const k = tileKey(r.rx, r.rz, m);
       if (state.tiles.has(k) || state.pending.has(k)) continue;
       const file = state.dim.regions.get(regionKey(r.rx, r.rz));
       if (!file) continue;
       state.pending.add(k);
-      state.queue.push({ rx: r.rx, rz: r.rz, file, mode: m, biomeY });
+      state.queue.push({ key: k, rx: r.rx, rz: r.rz, file, mode: m, biomeY, d: want.get(k) });
       state.total++;
       added++;
     }
+    if (added || dropped) state.queue.sort((x, y) => x.d - y.d);
     trimCache(keep);
-    if (added) {
+    if (added || dropped) {
       if (state.onProgress) state.onProgress(state.done, state.total);
       pump();
     }
   }
+
+  /* ¿Esta región está en la cola o pasando por un worker ahora mismo? */
+  function isLoading(rx, rz) { return state.pending.has(tileKey(rx, rz, state.mode)); }
 
   function get(rx, rz) { return state.tiles.get(tileKey(rx, rz, state.mode)) || null; }
   function isAvailable() { return state.available !== false; }
@@ -172,7 +197,7 @@
   }
 
   global.Terrain = {
-    setDimension, setMode, mode, request, get, stats, isAvailable, lastError, TILE,
+    setDimension, setMode, mode, request, get, isLoading, stats, isAvailable, lastError, TILE,
     probe: start,
     set onTile(fn) { state.onTile = fn; },
     set onProgress(fn) { state.onProgress = fn; }

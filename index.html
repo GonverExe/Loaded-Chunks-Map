@@ -106,7 +106,6 @@
           <option value="biomes" data-i18n="mode.biomes"></option>
         </select>
         <p class="note" id="terrainNote" hidden></p>
-        <label class="chk"><input type="checkbox" id="layerGenerated" checked> <span data-i18n="layer.generated"></span></label>
         <label class="chk"><input type="checkbox" id="layerActivity"> <span data-i18n="layer.activity"></span></label>
         <label class="chk"><input type="checkbox" id="layerLoaded" checked> <span data-i18n="layer.loaded"></span></label>
         <label class="chk"><input type="checkbox" id="layerMarkers" checked> <span data-i18n="layer.markers"></span></label>
@@ -132,14 +131,17 @@
         <button id="gotoSpawn" class="btn small" data-i18n="btn.gotoSpawn"></button>
         <select id="gotoPlayer" class="small"></select>
         <button id="png" class="btn small" data-i18n="btn.png"></button>
-        <span id="terrainStatus" class="terrain-status" hidden></span>
+        <span id="terrainStatus" class="terrain-status" hidden>
+          <i class="spin"></i>
+          <span id="terrainStatusText"></span>
+          <span class="meter"><i id="terrainStatusBar"></i></span>
+        </span>
         <span class="spacer"></span>
         <span class="legend">
           <span><i class="sw spawn"></i><span data-i18n="legend.spawn"></span></span>
           <span><i class="sw player"></i><span data-i18n="legend.player"></span></span>
           <span><i class="sw force"></i><span data-i18n="legend.force"></span></span>
           <span><i class="sw terrain"></i><span data-i18n="legend.terrain"></span></span>
-          <span><i class="sw gen"></i><span data-i18n="legend.generated"></span></span>
         </span>
       </div>
       <div class="canvas-holder">

@@ -211,7 +211,8 @@
     const el = $('terrainStatus');
     if (!total || done >= total) { el.hidden = true; return; }
     el.hidden = false;
-    el.textContent = I18n.t('terrain.rendering', { done: done, total: total });
+    $('terrainStatusText').textContent = I18n.t('terrain.rendering', { done: done, total: total });
+    $('terrainStatusBar').style.width = Math.round((done / total) * 100) + '%';
   }
 
   /*
@@ -297,7 +298,7 @@
     const loaded = ChunkModel.compute(world, currentDim, opts);
     map.layers = {
       terrain: $('layerTerrain').checked,
-      generated: $('layerGenerated').checked,
+      generated: false,               // capa retirada: el relleno gris tapaba el terreno
       activity: $('layerActivity').checked,
       loaded: $('layerLoaded').checked,
       markers: $('layerMarkers').checked,
@@ -342,7 +343,7 @@
   /* ---------- Controles ---------- */
 
   ['srcSpawn', 'srcPlayers', 'srcForce', 'spawnRadius', 'simDist',
-   'spawnManual', 'layerTerrain', 'terrainMode', 'layerGenerated', 'layerActivity', 'layerLoaded', 'layerMarkers', 'layerGrid']
+   'spawnManual', 'layerTerrain', 'terrainMode', 'layerActivity', 'layerLoaded', 'layerMarkers', 'layerGrid']
     .forEach((id) => $(id).addEventListener('input', () => update(false)));
 
   $('spawnManual').addEventListener('change', (e) => {

@@ -20,6 +20,7 @@
       scaleLine: v('--map-scale-line', 'rgba(255,255,255,0.5)'),
       hover: v('--map-hover', '#ffffff'),
       empty: v('--map-empty', 'rgba(255,255,255,0.25)'),
+      loadMark: v('--map-load-mark', 'rgba(125,211,252,0.85)'),
       recentRGB: v('--map-recent-rgb', '245, 158, 11'),
       spawn: v('--spawn', '#4ade80'),
       player: v('--player', '#60a5fa'),
@@ -37,9 +38,11 @@
     this.loaded = new Map();
     this.world = null;
     this.colors = readColors();
-    this.layers = { terrain: true, generated: true, activity: false, loaded: true, markers: true, grid: true };
+    this.layers = { terrain: true, generated: false, activity: false, loaded: true, markers: true, grid: true };
     this.hover = null;
     this._raf = null;
+    this._animating = false;        // hay teselas en camino: repintar para animar
+    this._animTimer = null;
     this._bindEvents();
     this.resize();
   }
@@ -230,6 +233,7 @@
 
   ChunkMap.prototype._draw = function () {
     const ctx = this.ctx, s = this.scale, C = this.colors;
+    this._animating = false;
     ctx.fillStyle = C.bg;
     ctx.fillRect(0, 0, this.w, this.h);
     if (!this.dim) { this._drawEmpty(); return; }
@@ -239,19 +243,21 @@
     const px = Math.max(1, s);
 
     // Chunks ya generados en disco (contexto del mapa).
-    // Se dibujan primero: el terreno, cuando llega, los tapa.
-    if (this.layers.generated) {
+    // Se dibujan primero: el terreno, cuando llega, los tapa. El relleno plano
+    // (layers.generated) está retirado de la interfaz; el resaltado por fecha
+    // se pinta solo, sin él, y solo sobre lo guardado hace poco.
+    if (this.layers.generated || this.layers.activity) {
       const now = Date.now() / 1000;
       const recentCut = 60 * 60 * 24 * 7;   // 7 días
       for (const c of this.dim.generated.values()) {
         if (!inView(c.x, c.z)) continue;
+        let t = 0;
+        if (this.layers.activity && c.mtime) t = Math.max(0, 1 - Math.max(0, now - c.mtime) / recentCut);
+        if (t <= 0 && !this.layers.generated) continue;
         const p = this.chunkToScreen(c.x, c.z);
-        if (this.layers.activity && c.mtime) {
-          const t = Math.max(0, 1 - Math.max(0, now - c.mtime) / recentCut);
-          ctx.fillStyle = t > 0 ? 'rgba(' + C.recentRGB + ',' + (0.10 + t * 0.55).toFixed(3) + ')' : C.generated;
-        } else {
-          ctx.fillStyle = C.generated;
-        }
+        ctx.fillStyle = t > 0
+          ? 'rgba(' + C.recentRGB + ',' + (0.10 + t * 0.55).toFixed(3) + ')'
+          : C.generated;
         ctx.fillRect(p.x, p.y, px, px);
       }
     }
@@ -290,6 +296,11 @@
       ctx.strokeRect(p.x + 0.5, p.y + 0.5, px, px);
     }
     this._scaleBar();
+    // Repintado de la animación a ~16 fps: suficiente para el barrido y mucho
+    // más barato que redibujar el mapa entero en cada frame.
+    if (this._animating && !this._animTimer) {
+      this._animTimer = setTimeout(() => { this._animTimer = null; this.draw(); }, 60);
+    }
   };
 
   /* Contorno del área cargada: solo las aristas que dan a un chunk no cargado. */
@@ -320,7 +331,8 @@
 
   /*
    * Dibuja las teselas de terreno que ya estén listas y pide las que faltan,
-   * empezando por las del centro de la vista. Devuelve si pintó alguna.
+   * empezando por las del centro de la vista. Las que están en camino quedan
+   * marcadas con el aviso de carga. Devuelve si pintó terreno de verdad.
    */
   ChunkMap.prototype._drawTerrain = function (min, max) {
     const ctx = this.ctx;
@@ -346,11 +358,43 @@
       }
     }
     ctx.imageSmoothingEnabled = true;
+
+    // Se pide antes de pintar el aviso: así la cola ya sabe qué está en camino.
     if (missing.length) {
       missing.sort((a, b) => a.d - b.d);
       Terrain.request(missing);
+      const phase = performance.now() / 1000;
+      let waiting = 0;
+      for (const r of missing) {
+        if (!Terrain.isLoading(r.rx, r.rz)) continue;
+        if (this._drawLoadingTile(r.rx, r.rz, side, phase)) waiting++;
+      }
+      // Mientras quede algo en camino, el mapa se repinta solo para animar.
+      if (waiting) this._animating = true;
     }
     return drawn;
+  };
+
+  /*
+   * Aviso de "esta región se está leyendo": solo un aro girando en el centro,
+   * sin velo ni relleno, para no alterar el fondo del mapa mientras llega.
+   */
+  ChunkMap.prototype._drawLoadingTile = function (rx, rz, side, phase) {
+    if (side < 10) return false;      // región diminuta en pantalla: no cabe el aro
+    const ctx = this.ctx;
+    const p = this.chunkToScreen(rx * 32, rz * 32);
+    const r = Math.max(3, Math.min(13, side / 5));
+    const a = phase * 3.2;
+    ctx.save();
+    ctx.strokeStyle = this.colors.loadMark;
+    ctx.lineWidth = Math.max(1.5, r / 5);
+    ctx.lineCap = 'round';
+    ctx.globalAlpha = 0.85;
+    ctx.beginPath();
+    ctx.arc(p.x + side / 2, p.y + side / 2, r, a, a + Math.PI * 1.35);
+    ctx.stroke();
+    ctx.restore();
+    return true;
   };
 
   ChunkMap.prototype._grid = function (step, color, min, max) {

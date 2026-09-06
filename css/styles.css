@@ -35,6 +35,8 @@
   --map-hover: #ffffff;
   --map-empty: rgba(255, 255, 255, 0.25);
   --map-recent-rgb: 245, 158, 11;
+  /* Aro de "región en camino" */
+  --map-load-mark: rgba(125, 211, 252, 0.85);
 }
 
 :root[data-theme="light"] {
@@ -72,6 +74,7 @@
   --map-hover: #0f1e37;
   --map-empty: rgba(15, 30, 55, 0.35);
   --map-recent-rgb: 217, 119, 6;
+  --map-load-mark: rgba(2, 132, 199, 0.8);
 }
 
 * { box-sizing: border-box; }
@@ -261,13 +264,43 @@ select.small { padding: 4px 8px; font-size: 13px; width: auto; }
 .dot.spawn, .sw.spawn { background: var(--spawn); }
 .dot.player, .sw.player { background: var(--player); }
 .dot.force, .sw.force { background: var(--force); }
-.sw.gen { background: var(--gen); }
 .sw.terrain { background: linear-gradient(135deg, #7fb238 55%, #4040ff); }
 .mode-select { margin: 2px 0 8px; padding: 5px 8px; font-size: 13px; }
 .terrain-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
   font-size: 12px;
   color: var(--muted);
   white-space: nowrap;
+}
+.spin {
+  width: 11px;
+  height: 11px;
+  flex: none;
+  border: 2px solid var(--line);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.75s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+/* Barrita fina con el avance de las regiones ya renderizadas. */
+.terrain-status .meter {
+  width: 54px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--line);
+  overflow: hidden;
+}
+.terrain-status .meter i {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: var(--accent);
+  transition: width 0.2s ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  .spin { animation-duration: 2.4s; }
 }
 
 #warnList { margin: 0; padding-left: 18px; font-size: 12px; color: var(--warn); }
