@@ -334,9 +334,22 @@ function renderChunk(chunk, pixels, heights, px0, pz0) {
  * End no hay "superficie" útil (techo de bedrock, islas flotantes), así que se
  * muestrea a una altura fija de juego.
  */
+/* ¿El chunk tiene terreno de verdad, o es un proto-chunk todavía sin generar? */
+function hasTerrain(chunk) {
+  if (chunk.heightmap) return true;          // el heightmap solo existe si hay relieve
+  for (const s of chunk.sections) {          // formatos sin Heightmaps: mirar las paletas
+    if (!s.states || !s.states.palette) continue;
+    for (const name of s.states.palette) if (!BlockColors.isAir(name)) return true;
+  }
+  return false;
+}
+
 function renderChunkBiomes(chunk, pixels, px0, pz0, fixedY) {
   const sections = chunk.sections;
   if (!sections || !sections.length) return false;
+  // Los proto-chunks (structure_starts, biomes…) ya traen biomas asignados pero
+  // no tienen mundo: pintarlos llenaba el mapa de color y tapaba las otras capas.
+  if (!hasTerrain(chunk)) return false;
 
   let minSec = Infinity, maxSec = -Infinity;
   for (const s of sections) {
@@ -362,13 +375,18 @@ function renderChunkBiomes(chunk, pixels, px0, pz0, fixedY) {
 
   for (let z = 0; z < 16; z++) {
     for (let x = 0; x < 16; x++) {
+      /*
+       * Los proto-chunks ya tienen biomas asignados pero aún no tienen terreno.
+       * Sin este filtro el mapa de biomas pintaría color donde no hay mundo, y
+       * encima taparía la capa de chunks generados. El heightmap a 0 delata la
+       * columna vacía; sin heightmap se acepta (formatos antiguos).
+       */
+      const h = hm ? valueAt(hm, z * 16 + x, HEIGHT_BITS, true) : -1;
+      if (h === 0) continue;
+
       let y = fixedY;
       if (y === null) {
-        y = chunkMinY + 64;
-        if (hm) {
-          const v = valueAt(hm, z * 16 + x, HEIGHT_BITS, true);
-          if (v > 0) y = chunkMinY + v - 1;
-        }
+        y = h > 0 ? chunkMinY + h - 1 : chunkMinY + 64;
       }
       let si = (y >> 4) - minSec;
       if (si < 0) si = 0;

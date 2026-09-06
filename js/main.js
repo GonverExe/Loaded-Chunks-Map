@@ -3,7 +3,18 @@
   'use strict';
 
   const $ = (id) => document.getElementById(id);
-  const SPAWN_RADIUS_CLASSIC = 9;   // 19x19 chunks con ticking, más borde
+
+  /*
+   * Spawn chunks según la versión del mundo:
+   *  - 1.20.5 (DataVersion 3837) añadió la gamerule spawnChunkRadius, con valor
+   *    por defecto 2 y rango 0-32; 0 los desactiva y 10 reproduce lo de antes.
+   *  - 1.21.9 (snapshot 25w31a, DataVersion 4534) eliminó los spawn chunks.
+   * El valor es el radio del ticket: con R quedan (2R-1)² chunks con entity
+   * ticking, (2R+1)² con block ticking y (2R+3)² cargados.
+   */
+  const DV_GAMERULE_ADDED = 3837;    // 1.20.5
+  const DV_SPAWN_REMOVED = 4534;     // 25w31a, camino de 1.21.9
+  const CLASSIC_TICKET_RADIUS = 10;  // equivale al comportamiento pre-1.20.5
 
   let world = null;
   let currentDim = null;
@@ -156,8 +167,10 @@
     }
     checkTerrainSupport();
 
-    // Radio de spawn: de la gamerule si el mundo la trae, si no el clásico.
-    $('spawnRadius').value = world.spawnChunkRadius != null ? world.spawnChunkRadius : SPAWN_RADIUS_CLASSIC;
+    // El radio sale de la versión y de las gamerules del propio mundo.
+    $('spawnManual').checked = false;
+    $('spawnRadiusRow').hidden = true;
+    $('spawnRadius').value = spawnState().radius;
 
     currentDim = null;
     renderDimSelect();
@@ -201,11 +214,41 @@
     el.textContent = I18n.t('terrain.rendering', { done: done, total: total });
   }
 
+  /*
+   * Qué spawn chunks tiene este mundo, deducido de su versión y sus gamerules.
+   * kind: gamerule | disabled | classic | removed
+   */
+  function spawnState() {
+    const dv = world.dataVersion || 0;
+    if (dv >= DV_SPAWN_REMOVED) return { kind: 'removed', radius: 0 };
+    const r = world.spawnChunkRadius;
+    if (r != null) return { kind: r === 0 ? 'disabled' : 'gamerule', radius: r };
+    return { kind: 'classic', radius: CLASSIC_TICKET_RADIUS };
+  }
+
   function renderSpawnNote() {
-    const detected = world.spawnChunkRadius;
-    $('spawnNote').innerHTML = detected != null
-      ? I18n.t('note.spawnDetected', { r: detected })
-      : I18n.t('note.spawnClassic', { r: SPAWN_RADIUS_CLASSIC });
+    const st = spawnState();
+    const version = world.versionName || world.dataVersion || '?';
+    const manual = $('spawnManual').checked;
+    const r = manual ? parseInt($('spawnRadius').value, 10) : st.radius;
+    let html;
+    if (manual) {
+      html = I18n.t('spawn.manualNote', { side: Math.max(0, r * 2 - 1) });
+    } else if (st.kind === 'removed') {
+      html = I18n.t('spawn.removed', { version: version });
+    } else if (st.kind === 'disabled') {
+      html = I18n.t('spawn.disabled', { version: version });
+    } else if (st.kind === 'gamerule') {
+      html = I18n.t('spawn.gamerule', { version: version, r: st.radius, side: st.radius * 2 - 1 });
+    } else {
+      html = I18n.t('spawn.classic', { version: version, r: CLASSIC_TICKET_RADIUS });
+    }
+    $('spawnNote').innerHTML = html;
+
+    // Sin spawn chunks no hay nada que dibujar: la casilla queda inerte.
+    const nada = !manual && st.radius === 0;
+    $('srcSpawn').disabled = nada;
+    $('srcSpawn').parentElement.style.opacity = nada ? 0.5 : '';
   }
 
   function renderWorldInfo() {
@@ -229,7 +272,10 @@
 
   function options() {
     return {
-      spawnRadius: parseInt($('spawnRadius').value, 10),
+      // Radio de ticket: el detectado en el mundo, salvo ajuste manual.
+      spawnRadius: $('spawnManual').checked
+        ? parseInt($('spawnRadius').value, 10)
+        : spawnState().radius,
       simulationDistance: parseInt($('simDist').value, 10),
       useSpawn: $('srcSpawn').checked,
       usePlayers: $('srcPlayers').checked,
@@ -240,8 +286,10 @@
   function update(fit) {
     if (!world || !currentDim) return;
     const opts = options();
+    // El slider manual muestra el área con entity ticking: (2R-1)².
     $('spawnRadiusOut').textContent = I18n.t('ctl.chunksGrid',
-      { n: opts.spawnRadius, side: opts.spawnRadius * 2 + 1 });
+      { n: opts.spawnRadius, side: Math.max(0, opts.spawnRadius * 2 - 1) });
+    renderSpawnNote();
     $('simDistOut').textContent = I18n.t('ctl.chunksGrid',
       { n: opts.simulationDistance, side: opts.simulationDistance * 2 + 1 });
 
@@ -294,8 +342,13 @@
   /* ---------- Controles ---------- */
 
   ['srcSpawn', 'srcPlayers', 'srcForce', 'spawnRadius', 'simDist',
-   'layerTerrain', 'terrainMode', 'layerGenerated', 'layerActivity', 'layerLoaded', 'layerMarkers', 'layerGrid']
+   'spawnManual', 'layerTerrain', 'terrainMode', 'layerGenerated', 'layerActivity', 'layerLoaded', 'layerMarkers', 'layerGrid']
     .forEach((id) => $(id).addEventListener('input', () => update(false)));
+
+  $('spawnManual').addEventListener('change', (e) => {
+    $('spawnRadiusRow').hidden = !e.target.checked;
+    if (e.target.checked) $('spawnRadius').value = spawnState().radius;
+  });
 
   $('dimSelect').addEventListener('change', (e) => {
     currentDim = world.dimensions.get(e.target.value);

@@ -251,6 +251,7 @@ select {
 select.small { padding: 4px 8px; font-size: 13px; width: auto; }
 .chk { display: flex; align-items: center; gap: 8px; font-size: 14px; margin: 7px 0; cursor: pointer; }
 .chk input { accent-color: var(--accent); }
+.chk.sub { font-size: 13px; color: var(--muted); margin-left: 2px; }
 .range { display: block; font-size: 13px; color: var(--muted); margin: 6px 0 2px; }
 .range input { width: 100%; accent-color: var(--accent); }
 .range output { color: var(--text); font-variant-numeric: tabular-nums; }

@@ -81,11 +81,12 @@
       <section class="card">
         <h2 data-i18n="card.sources"></h2>
         <label class="chk"><input type="checkbox" id="srcSpawn" checked><span class="dot spawn"></span> <span data-i18n="src.spawn"></span></label>
-        <label class="range">
+        <p class="note" id="spawnNote"></p>
+        <label class="chk sub"><input type="checkbox" id="spawnManual"> <span data-i18n="spawn.manual"></span></label>
+        <label class="range" id="spawnRadiusRow" hidden>
           <span data-i18n="ctl.spawnRadius"></span> <output id="spawnRadiusOut"></output>
           <input type="range" id="spawnRadius" min="0" max="32" step="1">
         </label>
-        <p class="note" id="spawnNote"></p>
 
         <label class="chk"><input type="checkbox" id="srcPlayers" checked><span class="dot player"></span> <span data-i18n="src.players"></span></label>
         <label class="range">

@@ -77,8 +77,11 @@ Dimensions detected: overworld (`region/`), `DIM-1`, `DIM1` and custom dimension
 A save **does not store** which chunks were loaded in memory: that is running-server state. What the
 page shows is a reconstruction of the *tickets* that would exist when the world starts:
 
-- **Spawn chunks**: radius taken from the `spawnChunkRadius` gamerule when the world has it (1.20.5+);
-  otherwise the classic behaviour is used (radius 9 → 19×19 ticking chunks plus a border). Editable.
+- **Spawn chunks**: worked out from the world itself, no guessing. If it has the `spawnChunkRadius`
+  gamerule (1.20.5+) its value is used — it is the *ticket* radius, so R leaves (2R-1)² entity-ticking
+  chunks, (2R+1)² block-ticking and (2R+3)² loaded; 0 disables them. Older worlds get the classic
+  behaviour, equivalent to radius 10 → 19×19 entity ticking. Worlds from 1.21.9 on have none at all:
+  spawn chunks were removed from the game. There is a manual override if you need it.
 - **Players**: simulation distance does not live in the world but in `server.properties` or the client
   options, so it is a UI control (10 by default).
 - **Chunk loaders** made with ender pearls, portals or mods: they depend on the running state and are
@@ -190,8 +193,12 @@ Dimensiones detectadas: overworld (`region/`), `DIM-1`, `DIM1` y dimensiones per
 Un save **no guarda** qué chunks estaban cargados en memoria: eso es estado del servidor en ejecución.
 Lo que muestra la página es una reconstrucción de los *tickets* que existirían al arrancar el mundo:
 
-- **Spawn chunks**: radio tomado de la gamerule `spawnChunkRadius` cuando el mundo la trae (1.20.5+);
-  si no, se usa el comportamiento clásico (radio 9 → 19×19 chunks con ticking más borde). Editable.
+- **Spawn chunks**: se deducen del propio mundo, sin elegir nada. Si trae la gamerule
+  `spawnChunkRadius` (1.20.5+) se usa su valor — es el radio del *ticket*, así que R deja (2R-1)²
+  chunks con entity ticking, (2R+1)² con block ticking y (2R+3)² cargados; 0 los desactiva. Los mundos
+  anteriores usan el comportamiento clásico, equivalente al radio 10 → 19×19 con entity ticking. Los
+  mundos de 1.21.9 en adelante no tienen ninguno: los spawn chunks se eliminaron del juego. Queda un
+  ajuste manual por si hace falta.
 - **Jugadores**: la distancia de simulación no vive en el mundo sino en `server.properties` o en las
   opciones del cliente, así que es un control de la interfaz (por defecto 10).
 - **Chunk loaders** con perlas de ender, portales o mods: dependen del estado en ejecución y no quedan
@@ -301,8 +308,12 @@ Dimensões detectadas: overworld (`region/`), `DIM-1`, `DIM1` e dimensões perso
 Um save **não guarda** quais chunks estavam carregados na memória: isso é estado do servidor em
 execução. O que a página mostra é uma reconstrução dos *tickets* que existiriam ao iniciar o mundo:
 
-- **Spawn chunks**: raio tirado da gamerule `spawnChunkRadius` quando o mundo a tem (1.20.5+); se não,
-  usa-se o comportamento clássico (raio 9 → 19×19 chunks com ticking mais uma borda). Editável.
+- **Spawn chunks**: deduzidos do próprio mundo, sem escolher nada. Se ele tem a gamerule
+  `spawnChunkRadius` (1.20.5+), usa-se o valor dela — é o raio do *ticket*, então R deixa (2R-1)²
+  chunks com entity ticking, (2R+1)² com block ticking e (2R+3)² carregados; 0 os desativa. Mundos
+  anteriores usam o comportamento clássico, equivalente ao raio 10 → 19×19 com entity ticking. Mundos
+  da 1.21.9 em diante não têm nenhum: os spawn chunks foram removidos do jogo. Há um ajuste manual
+  caso precise.
 - **Jogadores**: a distância de simulação não fica no mundo, e sim no `server.properties` ou nas opções
   do cliente, então é um controle da interface (10 por padrão).
 - **Chunk loaders** com pérolas do end, portais ou mods: dependem do estado em execução e não são
@@ -406,8 +417,10 @@ python3 -m http.server 8080   # 然后打开 http://localhost:8080
 存档**不会保存**当时内存中加载了哪些区块：那是服务器运行时的状态。页面展示的是世界启动时会存在的
 *票据（ticket）*的重建结果：
 
-- **出生点区块**：如果世界里有 `spawnChunkRadius` 游戏规则（1.20.5+）就采用它；否则使用经典行为
-  （半径 9 → 19×19 个持续 tick 的区块，外加一圈边界）。可以手动调整。
+- **出生点区块**：直接由世界本身推断，无需手动选择。如果世界有 `spawnChunkRadius` 游戏规则（1.20.5+）就
+  采用它的值——它是*票据*的半径，因此半径 R 会留下 (2R-1)² 个 entity ticking 区块、(2R+1)² 个 block
+  ticking 区块和 (2R+3)² 个已加载区块；值为 0 则关闭。更早的世界使用经典行为，相当于半径 10 → 19×19 个
+  entity ticking 区块。1.21.9 及以后的世界完全没有：出生点区块已从游戏中移除。仍保留手动调整选项。
 - **玩家**：模拟距离不在世界文件里，而在 `server.properties` 或客户端设置中，所以它是界面上的一个选项
   （默认 10）。
 - **区块加载器**：用末影珍珠、传送门或模组做的那种依赖运行时状态，不会写入磁盘，因此不会显示。
@@ -515,8 +528,11 @@ python3 -m http.server 8080   # и откройте http://localhost:8080
 Сохранение **не хранит**, какие чанки были загружены в памяти: это состояние работающего сервера. На
 странице показана реконструкция *тикетов*, которые существовали бы при запуске мира:
 
-- **Спавн-чанки**: радиус берётся из правила `spawnChunkRadius`, если оно есть в мире (1.20.5+); иначе
-  используется классическое поведение (радиус 9 → 19×19 чанков с тиками плюс граница). Можно изменить.
+- **Спавн-чанки**: определяются по самому миру, ничего выбирать не нужно. Если в мире есть правило
+  `spawnChunkRadius` (1.20.5+), берётся его значение — это радиус *тикета*, поэтому R даёт (2R-1)²
+  чанков с entity ticking, (2R+1)² с block ticking и (2R+3)² загруженных; 0 их отключает. В более
+  старых мирах действует классическое поведение, равное радиусу 10 → 19×19 с entity ticking. В мирах
+  с 1.21.9 их нет вовсе: спавн-чанки убрали из игры. Ручная настройка остаётся на всякий случай.
 - **Игроки**: дистанция симуляции хранится не в мире, а в `server.properties` или в настройках клиента,
   поэтому это параметр интерфейса (по умолчанию 10).
 - **Чанклоадеры** из эндер-жемчуга, порталов или модов: они зависят от состояния работающего сервера и

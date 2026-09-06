@@ -34,10 +34,16 @@
     const map = new Map();
     if (!dim) return map;
 
-    if (options.useSpawn && world.spawn && dim.id === 'minecraft:overworld') {
+    /*
+     * El valor de spawnChunkRadius es el radio del ticket, no el del área con
+     * entity ticking: con radio R el juego deja (2R-1)² chunks con entity
+     * ticking, (2R+1)² con block ticking y (2R+3)² cargados. Por eso se pasa
+     * R-1 a stamp(), que añade esos dos anillos. R = 0 no carga nada.
+     */
+    if (options.useSpawn && options.spawnRadius > 0 && world.spawn && dim.id === 'minecraft:overworld') {
       const cx = Math.floor(world.spawn.x / 16);
       const cz = Math.floor(world.spawn.z / 16);
-      stamp(map, cx, cz, options.spawnRadius, 'spawn',
+      stamp(map, cx, cz, options.spawnRadius - 1, 'spawn',
             I18n.t('detail.spawn', { x: world.spawn.x, z: world.spawn.z }));
     }
 
