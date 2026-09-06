@@ -1,4 +1,4 @@
-/*
+/* 
  * Worker de terreno: recibe un region file entero y devuelve su imagen de
  * 512x512 (16 px por chunk), como las teselas que dibuja MCA Selector.
  *
