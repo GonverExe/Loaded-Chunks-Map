@@ -1,200 +1,336 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Loaded Chunks Map — mapa de chunks cargados de tu mundo de Minecraft</title>
-<meta name="description" content="Suelta la carpeta de tu mundo de Minecraft Java y mira qué chunks quedan cargados: spawn chunks, /forceload y el área alrededor de cada jugador. Todo en tu navegador, sin subir nada.">
-<meta name="theme-color" content="#070a11">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%230b0f17'/><rect x='6' y='6' width='9' height='9' fill='%234ade80'/><rect x='17' y='6' width='9' height='9' fill='%2360a5fa'/><rect x='6' y='17' width='9' height='9' fill='%23c084fc'/><rect x='17' y='17' width='9' height='9' fill='%231c2433'/></svg>">
-<link rel="stylesheet" href="css/styles.css">
-<script>
-  /* Tema antes del primer pintado, para que no haya destello. */
-  (function () {
-    try {
-      var t = localStorage.getItem('lcm.theme');
-      if (t !== 'light' && t !== 'dark') {
-        t = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
-      }
-      document.documentElement.setAttribute('data-theme', t);
-    } catch (e) {}
-  })();
-</script>
-</head>
-<body>
-
-<div class="topbar">
-  <button id="themeBtn" class="icon-btn" type="button" data-i18n-title="settings.theme.toLight" data-i18n-aria="settings.theme.toLight">
-    <svg id="themeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
-      <circle cx="12" cy="12" r="4"></circle>
-      <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path>
-    </svg>
-  </button>
-  <select id="langSelect" class="lang-select" data-i18n-aria="settings.language"></select>
-</div>
-
-<header class="hero">
-  <div class="wrap">
-    <div class="badge" data-i18n="hero.badge"></div>
-    <h1 data-i18n="hero.title"></h1>
-    <p class="lead" data-i18n="hero.lead"></p>
-
-    <div id="drop" class="drop">
-      <input type="file" id="dirInput" webkitdirectory directory multiple hidden>
-      <div class="drop-inner">
-        <svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.6">
-          <path d="M3 7.5A1.5 1.5 0 0 1 4.5 6h4l2 2.5h9A1.5 1.5 0 0 1 21 10v8a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 18z"/>
-        </svg>
-        <p data-i18n="drop.title"></p>
-        <div class="btns">
-          <button id="pickDir" class="btn primary" data-i18n="drop.pickDir"></button>
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Loaded Chunks Map — mapa de chunks cargados de tu mundo de Minecraft</title>
+        <meta
+            name="description"
+            content="Suelta la carpeta de tu mundo de Minecraft Java y mira qué chunks quedan cargados: spawn chunks, /forceload y el área alrededor de cada jugador. Todo en tu navegador, sin subir nada."
+        />
+        <meta name="theme-color" content="#070a11" />
+        <link
+            rel="icon"
+            href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%230b0f17'/><rect x='6' y='6' width='9' height='9' fill='%234ade80'/><rect x='17' y='6' width='9' height='9' fill='%2360a5fa'/><rect x='6' y='17' width='9' height='9' fill='%23c084fc'/><rect x='17' y='17' width='9' height='9' fill='%231c2433'/></svg>"
+        />
+        <link rel="stylesheet" href="css/styles.css" />
+        <script>
+            /* Tema antes del primer pintado, para que no haya destello. */
+            (function () {
+                try {
+                    var t = localStorage.getItem('lcm.theme');
+                    if (t !== 'light' && t !== 'dark') {
+                        t =
+                            window.matchMedia &&
+                            window.matchMedia('(prefers-color-scheme: light)').matches
+                                ? 'light'
+                                : 'dark';
+                    }
+                    document.documentElement.setAttribute('data-theme', t);
+                } catch (e) {}
+            })();
+        </script>
+    </head>
+    <body>
+        <div class="topbar">
+            <button
+                id="themeBtn"
+                class="icon-btn"
+                type="button"
+                data-i18n-title="settings.theme.toLight"
+                data-i18n-aria="settings.theme.toLight"
+            >
+                <svg
+                    id="themeIcon"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                >
+                    <circle cx="12" cy="12" r="4"></circle>
+                    <path
+                        d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"
+                    ></path>
+                </svg>
+            </button>
+            <select id="langSelect" class="lang-select" data-i18n-aria="settings.language"></select>
         </div>
-        <p class="hint" id="dropHint" data-i18n="drop.hint"></p>
-      </div>
-    </div>
 
-    <details class="where">
-      <summary data-i18n="where.summary"></summary>
-      <ul>
-        <li data-i18n="where.win"></li>
-        <li data-i18n="where.mac"></li>
-        <li data-i18n="where.linux"></li>
-        <li data-i18n="where.server"></li>
-      </ul>
-    </details>
-  </div>
-</header>
+        <header class="hero">
+            <div class="wrap">
+                <div class="badge" data-i18n="hero.badge"></div>
+                <h1 data-i18n="hero.title"></h1>
+                <p class="lead" data-i18n="hero.lead"></p>
 
-<main id="app" hidden>
-  <div class="app-grid">
-    <aside class="panel">
-      <section class="card" id="worldCard">
-        <h2 data-i18n="card.world"></h2>
-        <dl id="worldInfo"></dl>
-      </section>
+                <div id="drop" class="drop">
+                    <input type="file" id="dirInput" webkitdirectory directory multiple hidden />
+                    <div class="drop-inner">
+                        <svg
+                            viewBox="0 0 24 24"
+                            width="34"
+                            height="34"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.6"
+                        >
+                            <path
+                                d="M3 7.5A1.5 1.5 0 0 1 4.5 6h4l2 2.5h9A1.5 1.5 0 0 1 21 10v8a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 18z"
+                            />
+                        </svg>
+                        <p data-i18n="drop.title"></p>
+                        <div class="btns">
+                            <button
+                                id="pickDir"
+                                class="btn primary"
+                                data-i18n="drop.pickDir"
+                            ></button>
+                        </div>
+                        <p class="hint" id="dropHint" data-i18n="drop.hint"></p>
+                    </div>
+                </div>
 
-      <section class="card">
-        <h2 data-i18n="card.dimension"></h2>
-        <select id="dimSelect"></select>
-      </section>
+                <details class="where">
+                    <summary data-i18n="where.summary"></summary>
+                    <ul>
+                        <li data-i18n="where.win"></li>
+                        <li data-i18n="where.mac"></li>
+                        <li data-i18n="where.linux"></li>
+                        <li data-i18n="where.server"></li>
+                    </ul>
+                </details>
+            </div>
+        </header>
 
-      <section class="card">
-        <h2 data-i18n="card.sources"></h2>
-        <label class="chk"><input type="checkbox" id="srcSpawn" checked><span class="dot spawn"></span> <span data-i18n="src.spawn"></span></label>
-        <p class="note" id="spawnNote"></p>
-        <label class="chk sub"><input type="checkbox" id="spawnManual"> <span data-i18n="spawn.manual"></span></label>
-        <label class="range" id="spawnRadiusRow" hidden>
-          <span data-i18n="ctl.spawnRadius"></span> <output id="spawnRadiusOut"></output>
-          <input type="range" id="spawnRadius" min="0" max="32" step="1">
-        </label>
+        <main id="app" hidden>
+            <div class="app-grid">
+                <aside class="panel">
+                    <section class="card" id="worldCard">
+                        <h2 data-i18n="card.world"></h2>
+                        <dl id="worldInfo"></dl>
+                    </section>
 
-        <label class="chk"><input type="checkbox" id="srcPlayers" checked><span class="dot player"></span> <span data-i18n="src.players"></span></label>
-        <label class="range">
-          <span data-i18n="ctl.simDist"></span> <output id="simDistOut"></output>
-          <input type="range" id="simDist" min="2" max="32" step="1" value="10">
-        </label>
-        <p class="note" data-i18n="note.simDist"></p>
+                    <section class="card">
+                        <h2 data-i18n="card.dimension"></h2>
+                        <select id="dimSelect"></select>
+                    </section>
 
-        <label class="chk"><input type="checkbox" id="srcForce" checked><span class="dot force"></span> <span data-i18n="src.force"></span></label>
-      </section>
+                    <section class="card">
+                        <h2 data-i18n="card.sources"></h2>
+                        <label class="chk"
+                            ><input type="checkbox" id="srcSpawn" checked /><span
+                                class="dot spawn"
+                            ></span>
+                            <span data-i18n="src.spawn"></span
+                        ></label>
+                        <p class="note" id="spawnNote"></p>
+                        <label class="chk sub"
+                            ><input type="checkbox" id="spawnManual" />
+                            <span data-i18n="spawn.manual"></span
+                        ></label>
+                        <label class="range" id="spawnRadiusRow" hidden>
+                            <span data-i18n="ctl.spawnRadius"></span>
+                            <output id="spawnRadiusOut"></output>
+                            <input type="range" id="spawnRadius" min="0" max="32" step="1" />
+                        </label>
 
-      <section class="card">
-        <h2 data-i18n="card.layers"></h2>
-        <label class="chk"><input type="checkbox" id="layerTerrain" checked> <span data-i18n="layer.terrain"></span></label>
-        <select id="terrainMode" class="mode-select">
-          <option value="blocks" data-i18n="mode.blocks"></option>
-          <option value="biomes" data-i18n="mode.biomes"></option>
-        </select>
-        <p class="note" id="terrainNote" hidden></p>
-        <label class="chk"><input type="checkbox" id="layerActivity"> <span data-i18n="layer.activity"></span></label>
-        <label class="chk"><input type="checkbox" id="layerLoaded" checked> <span data-i18n="layer.loaded"></span></label>
-        <label class="chk"><input type="checkbox" id="layerMarkers" checked> <span data-i18n="layer.markers"></span></label>
-        <label class="chk"><input type="checkbox" id="layerGrid" checked> <span data-i18n="layer.grid"></span></label>
-      </section>
+                        <label class="chk"
+                            ><input type="checkbox" id="srcPlayers" checked /><span
+                                class="dot player"
+                            ></span>
+                            <span data-i18n="src.players"></span
+                        ></label>
+                        <label class="range">
+                            <span data-i18n="ctl.simDist"></span> <output id="simDistOut"></output>
+                            <input type="range" id="simDist" min="2" max="32" step="1" value="10" />
+                        </label>
+                        <p class="note" data-i18n="note.simDist"></p>
 
-      <section class="card">
-        <h2 data-i18n="card.summary"></h2>
-        <dl id="statsInfo"></dl>
-      </section>
+                        <label class="chk"
+                            ><input type="checkbox" id="srcForce" checked /><span
+                                class="dot force"
+                            ></span>
+                            <span data-i18n="src.force"></span
+                        ></label>
+                    </section>
 
-      <section class="card" id="warnCard" hidden>
-        <h2 data-i18n="card.warnings"></h2>
-        <ul id="warnList"></ul>
-      </section>
+                    <section class="card">
+                        <h2 data-i18n="card.layers"></h2>
+                        <label class="chk"
+                            ><input type="checkbox" id="layerTerrain" checked />
+                            <span data-i18n="layer.terrain"></span
+                        ></label>
+                        <select id="terrainMode" class="mode-select">
+                            <option value="blocks" data-i18n="mode.blocks"></option>
+                            <option value="biomes" data-i18n="mode.biomes"></option>
+                        </select>
+                        <p class="note" id="terrainNote" hidden></p>
+                        <label class="chk"
+                            ><input type="checkbox" id="layerActivity" />
+                            <span data-i18n="layer.activity"></span
+                        ></label>
+                        <label class="chk"
+                            ><input type="checkbox" id="layerLoaded" checked />
+                            <span data-i18n="layer.loaded"></span
+                        ></label>
+                        <label class="chk"
+                            ><input type="checkbox" id="layerMarkers" checked />
+                            <span data-i18n="layer.markers"></span
+                        ></label>
+                        <label class="chk"
+                            ><input type="checkbox" id="layerGrid" checked />
+                            <span data-i18n="layer.grid"></span
+                        ></label>
+                    </section>
 
-      <button id="reset" class="btn ghost wide" data-i18n="btn.reset"></button>
-    </aside>
+                    <section class="card">
+                        <h2 data-i18n="card.summary"></h2>
+                        <dl id="statsInfo"></dl>
+                    </section>
 
-    <div class="map-wrap">
-      <div class="map-toolbar">
-        <button id="fit" class="btn small" data-i18n="btn.fit"></button>
-        <button id="gotoSpawn" class="btn small" data-i18n="btn.gotoSpawn"></button>
-        <select id="gotoPlayer" class="small"></select>
-        <button id="png" class="btn small" data-i18n="btn.png"></button>
-        <span id="terrainStatus" class="terrain-status" hidden>
-          <i class="spin"></i>
-          <span id="terrainStatusText"></span>
-          <span class="meter"><i id="terrainStatusBar"></i></span>
-        </span>
-        <span class="spacer"></span>
-        <span class="legend">
-          <span><i class="sw spawn"></i><span data-i18n="legend.spawn"></span></span>
-          <span><i class="sw player"></i><span data-i18n="legend.player"></span></span>
-          <span><i class="sw force"></i><span data-i18n="legend.force"></span></span>
-          <span><i class="sw terrain"></i><span data-i18n="legend.terrain"></span></span>
-        </span>
-      </div>
-      <div class="canvas-holder">
-        <canvas id="map"></canvas>
-        <div id="tooltip" class="tooltip" hidden></div>
-      </div>
-      <p class="disclaimer" data-i18n="disclaimer"></p>
-    </div>
-  </div>
-</main>
+                    <section class="card" id="warnCard" hidden>
+                        <h2 data-i18n="card.warnings"></h2>
+                        <ul id="warnList"></ul>
+                    </section>
 
-<div id="loading" class="loading" hidden>
-  <div class="loading-box">
-    <div class="bar"><div id="bar" class="bar-fill"></div></div>
-    <p id="loadingText"></p>
-  </div>
-</div>
+                    <button id="reset" class="btn ghost wide" data-i18n="btn.reset"></button>
+                </aside>
 
-<section class="explain wrap">
-  <h2 data-i18n="explain.title"></h2>
-  <div class="cols">
-    <article>
-      <h3 data-i18n="explain.spawn.h"></h3>
-      <p data-i18n="explain.spawn.p"></p>
-    </article>
-    <article>
-      <h3 data-i18n="explain.force.h"></h3>
-      <p data-i18n="explain.force.p"></p>
-    </article>
-    <article>
-      <h3 data-i18n="explain.players.h"></h3>
-      <p data-i18n="explain.players.p"></p>
-    </article>
-    <article>
-      <h3 data-i18n="explain.terrain.h"></h3>
-      <p data-i18n="explain.terrain.p"></p>
-    </article>
-  </div>
-  <p class="fine" data-i18n="explain.fine"></p>
-</section>
+                <div class="map-wrap">
+                    <div class="map-toolbar">
+                        <div class="tb-side tb-left">
+                            <button id="fit" class="btn small" data-i18n="btn.fit"></button>
+                            <button
+                                id="gotoSpawn"
+                                class="btn small"
+                                data-i18n="btn.gotoSpawn"
+                            ></button>
+                            <select id="gotoPlayer" class="small"></select>
+                            <button id="png" class="btn small" data-i18n="btn.png"></button>
+                            <div class="dropdown" id="structMenu">
+                                <button
+                                    id="structBtn"
+                                    class="btn small"
+                                    type="button"
+                                    aria-haspopup="true"
+                                    aria-expanded="false"
+                                    aria-controls="structPanel"
+                                >
+                                    <span data-i18n="btn.structures"></span>
+                                    <span class="caret" aria-hidden="true"></span>
+                                </button>
+                                <div class="dropdown-panel" id="structPanel" hidden>
+                                    <label class="chk struct-all"
+                                        ><input type="checkbox" id="structAll" />
+                                        <span data-i18n="struct.all"></span
+                                    ></label>
+                                    <p
+                                        class="note struct-note"
+                                        id="structNote"
+                                        data-i18n="struct.hint"
+                                    ></p>
+                                    <div class="struct-list" id="structList"></div>
+                                </div>
+                            </div>
+                        </div>
 
-<footer class="foot wrap">
-  <p data-i18n="foot"></p>
-</footer>
+                        <div class="tb-center">
+                            <button
+                                id="liveBtn"
+                                class="btn live"
+                                type="button"
+                                aria-pressed="false"
+                            >
+                                <span class="live-dot" aria-hidden="true"></span>
+                                <span id="liveLabel"></span>
+                            </button>
+                            <p class="live-note" id="liveNote"></p>
+                        </div>
 
-<script src="js/i18n.js"></script>
-<script src="js/theme.js"></script>
-<script src="js/biomecolors.js"></script>
-<script src="js/terrain.js"></script>
-<script src="js/nbt.js"></script>
-<script src="js/world.js"></script>
-<script src="js/chunks.js"></script>
-<script src="js/map.js"></script>
-<script src="js/main.js"></script>
-</body>
+                        <div class="tb-side tb-right">
+                            <span class="legend">
+                                <span
+                                    ><i class="sw spawn"></i><span data-i18n="legend.spawn"></span
+                                ></span>
+                                <span
+                                    ><i class="sw player"></i><span data-i18n="legend.player"></span
+                                ></span>
+                                <span
+                                    ><i class="sw force"></i><span data-i18n="legend.force"></span
+                                ></span>
+                                <span
+                                    ><i class="sw terrain"></i
+                                    ><span data-i18n="legend.terrain"></span
+                                ></span>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="canvas-holder">
+                        <canvas id="map"></canvas>
+                        <div class="map-status">
+                            <span id="terrainStatus" class="terrain-status" hidden>
+                                <i class="spin"></i>
+                                <span id="terrainStatusText"></span>
+                                <span class="meter"><i id="terrainStatusBar"></i></span>
+                            </span>
+                            <span id="structStatus" class="terrain-status" hidden>
+                                <i class="spin"></i>
+                                <span id="structStatusText"></span>
+                                <span class="meter"><i id="structStatusBar"></i></span>
+                            </span>
+                        </div>
+                        <div id="tooltip" class="tooltip" hidden></div>
+                    </div>
+                    <p class="disclaimer" data-i18n="disclaimer"></p>
+                </div>
+            </div>
+        </main>
+
+        <div id="loading" class="loading" hidden>
+            <div class="loading-box">
+                <div class="bar"><div id="bar" class="bar-fill"></div></div>
+                <p id="loadingText"></p>
+            </div>
+        </div>
+
+        <section class="explain wrap">
+            <h2 data-i18n="explain.title"></h2>
+            <div class="cols">
+                <article>
+                    <h3 data-i18n="explain.spawn.h"></h3>
+                    <p data-i18n="explain.spawn.p"></p>
+                </article>
+                <article>
+                    <h3 data-i18n="explain.force.h"></h3>
+                    <p data-i18n="explain.force.p"></p>
+                </article>
+                <article>
+                    <h3 data-i18n="explain.players.h"></h3>
+                    <p data-i18n="explain.players.p"></p>
+                </article>
+                <article>
+                    <h3 data-i18n="explain.terrain.h"></h3>
+                    <p data-i18n="explain.terrain.p"></p>
+                </article>
+            </div>
+            <p class="fine" data-i18n="explain.fine"></p>
+        </section>
+
+        <footer class="foot wrap">
+            <p data-i18n="foot"></p>
+        </footer>
+
+        <script src="js/i18n.js"></script>
+        <script src="js/theme.js"></script>
+        <script src="js/biomecolors.js"></script>
+        <script src="js/terrain.js"></script>
+        <script src="js/nbt.js"></script>
+        <script src="js/world.js"></script>
+        <script src="js/chunks.js"></script>
+        <script src="js/map.js"></script>
+        <script src="js/structure-icons.js"></script>
+        <script src="js/structures.js"></script>
+        <script src="js/live.js"></script>
+        <script src="js/main.js"></script>
+    </body>
 </html>

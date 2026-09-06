@@ -56,15 +56,15 @@ dropping folders, a recent Chromium-based browser or Firefox.
 
 ## What is read, and where from
 
-| Data | Source in the save |
-|---|---|
-| Name, version, spawn, gamerules | `level.dat` (NBT + gzip) |
-| Player in a singleplayer world | `level.dat` → `Data.Player.Pos` |
-| Players on a server | `playerdata/<uuid>.dat` → `Pos`, `Dimension` |
-| Chunks pinned with `/forceload` | `<dim>/data/chunks.dat` → `data.Forced` (LongArray of packed `ChunkPos`) |
-| Generated chunks and their last save | header of `<dim>/region/r.X.Z.mca` (4 KiB of locations + 4 KiB of timestamps) |
-| Terrain | blocks of the chunks in `<dim>/region/r.X.Z.mca`, only for the regions on screen |
-| Biomes | `sections[].biomes` of those same chunks (4x4x4 cells) |
+| Data                                 | Source in the save                                                               |
+| ------------------------------------ | -------------------------------------------------------------------------------- |
+| Name, version, spawn, gamerules      | `level.dat` (NBT + gzip)                                                         |
+| Player in a singleplayer world       | `level.dat` → `Data.Player.Pos`                                                  |
+| Players on a server                  | `playerdata/<uuid>.dat` → `Pos`, `Dimension`                                     |
+| Chunks pinned with `/forceload`      | `<dim>/data/chunks.dat` → `data.Forced` (LongArray of packed `ChunkPos`)         |
+| Generated chunks and their last save | header of `<dim>/region/r.X.Z.mca` (4 KiB of locations + 4 KiB of timestamps)    |
+| Terrain                              | blocks of the chunks in `<dim>/region/r.X.Z.mca`, only for the regions on screen |
+| Biomes                               | `sections[].biomes` of those same chunks (4x4x4 cells)                           |
 
 Loading a world only reads the first 8 KiB of each `.mca`, so a multi-GB world opens in seconds; the
 full chunks are decoded later, and only for the regions you actually look at.
@@ -75,10 +75,10 @@ Dimensions detected: overworld (`region/`), `DIM-1`, `DIM1` and custom dimension
 ## What this **cannot** know
 
 A save **does not store** which chunks were loaded in memory: that is running-server state. What the
-page shows is a reconstruction of the *tickets* that would exist when the world starts:
+page shows is a reconstruction of the _tickets_ that would exist when the world starts:
 
 - **Spawn chunks**: worked out from the world itself, no guessing. If it has the `spawnChunkRadius`
-  gamerule (1.20.5+) its value is used — it is the *ticket* radius, so R leaves (2R-1)² entity-ticking
+  gamerule (1.20.5+) its value is used — it is the _ticket_ radius, so R leaves (2R-1)² entity-ticking
   chunks, (2R+1)² block-ticking and (2R+3)² loaded; 0 disables them. Older worlds get the classic
   behaviour, equivalent to radius 10 → 19×19 entity ticking. Worlds from 1.21.9 on have none at all:
   spawn chunks were removed from the game. There is a manual override if you need it.
@@ -87,7 +87,7 @@ page shows is a reconstruction of the *tickets* that would exist when the world 
 - **Chunk loaders** made with ender pearls, portals or mods: they depend on the running state and are
   never written to disk, so they do not show up.
 
-The ticket model is the usual one: radius *r* with *entity ticking*, one more ring with *block ticking*
+The ticket model is the usual one: radius _r_ with _entity ticking_, one more ring with _block ticking_
 and one more ring loaded only (border).
 
 ## Layout
@@ -172,15 +172,15 @@ arrastrar carpetas, un navegador basado en Chromium o Firefox reciente.
 
 ## Qué se lee, y de dónde
 
-| Dato | Origen en el save |
-|---|---|
-| Nombre, versión, spawn, gamerules | `level.dat` (NBT + gzip) |
-| Jugador en partida de un jugador | `level.dat` → `Data.Player.Pos` |
-| Jugadores en servidor | `playerdata/<uuid>.dat` → `Pos`, `Dimension` |
-| Chunks fijados con `/forceload` | `<dim>/data/chunks.dat` → `data.Forced` (LongArray de `ChunkPos` empaquetados) |
-| Chunks generados y su último guardado | cabecera de `<dim>/region/r.X.Z.mca` (4 KiB de posiciones + 4 KiB de timestamps) |
-| Terreno | bloques de los chunks de `<dim>/region/r.X.Z.mca`, solo de las regiones en pantalla |
-| Biomas | `sections[].biomes` de esos mismos chunks (celdas de 4x4x4) |
+| Dato                                  | Origen en el save                                                                   |
+| ------------------------------------- | ----------------------------------------------------------------------------------- |
+| Nombre, versión, spawn, gamerules     | `level.dat` (NBT + gzip)                                                            |
+| Jugador en partida de un jugador      | `level.dat` → `Data.Player.Pos`                                                     |
+| Jugadores en servidor                 | `playerdata/<uuid>.dat` → `Pos`, `Dimension`                                        |
+| Chunks fijados con `/forceload`       | `<dim>/data/chunks.dat` → `data.Forced` (LongArray de `ChunkPos` empaquetados)      |
+| Chunks generados y su último guardado | cabecera de `<dim>/region/r.X.Z.mca` (4 KiB de posiciones + 4 KiB de timestamps)    |
+| Terreno                               | bloques de los chunks de `<dim>/region/r.X.Z.mca`, solo de las regiones en pantalla |
+| Biomas                                | `sections[].biomes` de esos mismos chunks (celdas de 4x4x4)                         |
 
 Al cargar el mundo solo se leen los primeros 8 KiB de cada `.mca`, así que un mundo de varios GB se
 abre en segundos; los chunks completos se decodifican después, y solo los de las regiones que miras.
@@ -191,10 +191,10 @@ Dimensiones detectadas: overworld (`region/`), `DIM-1`, `DIM1` y dimensiones per
 ## Lo que esto **no** puede saber
 
 Un save **no guarda** qué chunks estaban cargados en memoria: eso es estado del servidor en ejecución.
-Lo que muestra la página es una reconstrucción de los *tickets* que existirían al arrancar el mundo:
+Lo que muestra la página es una reconstrucción de los _tickets_ que existirían al arrancar el mundo:
 
 - **Spawn chunks**: se deducen del propio mundo, sin elegir nada. Si trae la gamerule
-  `spawnChunkRadius` (1.20.5+) se usa su valor — es el radio del *ticket*, así que R deja (2R-1)²
+  `spawnChunkRadius` (1.20.5+) se usa su valor — es el radio del _ticket_, así que R deja (2R-1)²
   chunks con entity ticking, (2R+1)² con block ticking y (2R+3)² cargados; 0 los desactiva. Los mundos
   anteriores usan el comportamiento clásico, equivalente al radio 10 → 19×19 con entity ticking. Los
   mundos de 1.21.9 en adelante no tienen ninguno: los spawn chunks se eliminaron del juego. Queda un
@@ -204,7 +204,7 @@ Lo que muestra la página es una reconstrucción de los *tickets* que existiría
 - **Chunk loaders** con perlas de ender, portales o mods: dependen del estado en ejecución y no quedan
   escritos en disco, así que no aparecen.
 
-El modelo de tickets es el habitual: radio *r* con *entity ticking*, un anillo más con *block ticking*
+El modelo de tickets es el habitual: radio _r_ con _entity ticking_, un anillo más con _block ticking_
 y otro anillo más solo cargado (borde).
 
 ## Estructura
@@ -287,15 +287,15 @@ arrastar pastas, um navegador baseado em Chromium ou um Firefox recente.
 
 ## O que é lido, e de onde
 
-| Dado | Origem no save |
-|---|---|
-| Nome, versão, spawn, gamerules | `level.dat` (NBT + gzip) |
-| Jogador em mundo de um jogador | `level.dat` → `Data.Player.Pos` |
-| Jogadores em servidor | `playerdata/<uuid>.dat` → `Pos`, `Dimension` |
-| Chunks fixados com `/forceload` | `<dim>/data/chunks.dat` → `data.Forced` (LongArray de `ChunkPos` empacotados) |
-| Chunks gerados e o último save | cabeçalho de `<dim>/region/r.X.Z.mca` (4 KiB de posições + 4 KiB de timestamps) |
-| Terreno | blocos dos chunks de `<dim>/region/r.X.Z.mca`, só das regiões na tela |
-| Biomas | `sections[].biomes` desses mesmos chunks (células de 4x4x4) |
+| Dado                            | Origem no save                                                                  |
+| ------------------------------- | ------------------------------------------------------------------------------- |
+| Nome, versão, spawn, gamerules  | `level.dat` (NBT + gzip)                                                        |
+| Jogador em mundo de um jogador  | `level.dat` → `Data.Player.Pos`                                                 |
+| Jogadores em servidor           | `playerdata/<uuid>.dat` → `Pos`, `Dimension`                                    |
+| Chunks fixados com `/forceload` | `<dim>/data/chunks.dat` → `data.Forced` (LongArray de `ChunkPos` empacotados)   |
+| Chunks gerados e o último save  | cabeçalho de `<dim>/region/r.X.Z.mca` (4 KiB de posições + 4 KiB de timestamps) |
+| Terreno                         | blocos dos chunks de `<dim>/region/r.X.Z.mca`, só das regiões na tela           |
+| Biomas                          | `sections[].biomes` desses mesmos chunks (células de 4x4x4)                     |
 
 Ao carregar o mundo só são lidos os primeiros 8 KiB de cada `.mca`, então um mundo de vários GB abre em
 segundos; os chunks completos são decodificados depois, e só os das regiões que você olha.
@@ -306,10 +306,10 @@ Dimensões detectadas: overworld (`region/`), `DIM-1`, `DIM1` e dimensões perso
 ## O que isto **não** consegue saber
 
 Um save **não guarda** quais chunks estavam carregados na memória: isso é estado do servidor em
-execução. O que a página mostra é uma reconstrução dos *tickets* que existiriam ao iniciar o mundo:
+execução. O que a página mostra é uma reconstrução dos _tickets_ que existiriam ao iniciar o mundo:
 
 - **Spawn chunks**: deduzidos do próprio mundo, sem escolher nada. Se ele tem a gamerule
-  `spawnChunkRadius` (1.20.5+), usa-se o valor dela — é o raio do *ticket*, então R deixa (2R-1)²
+  `spawnChunkRadius` (1.20.5+), usa-se o valor dela — é o raio do _ticket_, então R deixa (2R-1)²
   chunks com entity ticking, (2R+1)² com block ticking e (2R+3)² carregados; 0 os desativa. Mundos
   anteriores usam o comportamento clássico, equivalente ao raio 10 → 19×19 com entity ticking. Mundos
   da 1.21.9 em diante não têm nenhum: os spawn chunks foram removidos do jogo. Há um ajuste manual
@@ -319,7 +319,7 @@ execução. O que a página mostra é uma reconstrução dos *tickets* que exist
 - **Chunk loaders** com pérolas do end, portais ou mods: dependem do estado em execução e não são
   gravados em disco, então não aparecem.
 
-O modelo de tickets é o de sempre: raio *r* com *entity ticking*, mais um anel com *block ticking* e
+O modelo de tickets é o de sempre: raio _r_ com _entity ticking_, mais um anel com _block ticking_ e
 mais um anel apenas carregado (borda).
 
 ## Estrutura
@@ -397,15 +397,15 @@ python3 -m http.server 8080   # 然后打开 http://localhost:8080
 
 ## 读取了什么，从哪里读
 
-| 数据 | 存档中的来源 |
-|---|---|
-| 名称、版本、出生点、游戏规则 | `level.dat`（NBT + gzip） |
-| 单人世界的玩家 | `level.dat` → `Data.Player.Pos` |
-| 服务器上的玩家 | `playerdata/<uuid>.dat` → `Pos`、`Dimension` |
-| 用 `/forceload` 固定的区块 | `<dim>/data/chunks.dat` → `data.Forced`（打包后的 `ChunkPos` LongArray） |
-| 已生成的区块及上次保存时间 | `<dim>/region/r.X.Z.mca` 的文件头（4 KiB 位置表 + 4 KiB 时间戳） |
-| 地形 | 这些 `<dim>/region/r.X.Z.mca` 中区块的方块，只读屏幕上的区域 |
-| 生物群系 | 同样这些区块的 `sections[].biomes`（4x4x4 单元） |
+| 数据                         | 存档中的来源                                                             |
+| ---------------------------- | ------------------------------------------------------------------------ |
+| 名称、版本、出生点、游戏规则 | `level.dat`（NBT + gzip）                                                |
+| 单人世界的玩家               | `level.dat` → `Data.Player.Pos`                                          |
+| 服务器上的玩家               | `playerdata/<uuid>.dat` → `Pos`、`Dimension`                             |
+| 用 `/forceload` 固定的区块   | `<dim>/data/chunks.dat` → `data.Forced`（打包后的 `ChunkPos` LongArray） |
+| 已生成的区块及上次保存时间   | `<dim>/region/r.X.Z.mca` 的文件头（4 KiB 位置表 + 4 KiB 时间戳）         |
+| 地形                         | 这些 `<dim>/region/r.X.Z.mca` 中区块的方块，只读屏幕上的区域             |
+| 生物群系                     | 同样这些区块的 `sections[].biomes`（4x4x4 单元）                         |
 
 加载世界时每个 `.mca` 只读前 8 KiB，所以几个 GB 的世界也能在几秒内打开；完整区块是之后才解码的，而且只解码
 你实际查看的区域。
@@ -425,7 +425,7 @@ python3 -m http.server 8080   # 然后打开 http://localhost:8080
   （默认 10）。
 - **区块加载器**：用末影珍珠、传送门或模组做的那种依赖运行时状态，不会写入磁盘，因此不会显示。
 
-票据模型是常见的那一套：半径 *r* 为 *entity ticking*，外面一圈 *block ticking*，再外面一圈仅加载（边界）。
+票据模型是常见的那一套：半径 _r_ 为 _entity ticking_，外面一圈 _block ticking_，再外面一圈仅加载（边界）。
 
 ## 项目结构
 
@@ -507,15 +507,15 @@ python3 -m http.server 8080   # и откройте http://localhost:8080
 
 ## Что читается и откуда
 
-| Данные | Источник в сохранении |
-|---|---|
-| Название, версия, спавн, игровые правила | `level.dat` (NBT + gzip) |
-| Игрок в одиночном мире | `level.dat` → `Data.Player.Pos` |
-| Игроки на сервере | `playerdata/<uuid>.dat` → `Pos`, `Dimension` |
-| Чанки, закреплённые через `/forceload` | `<dim>/data/chunks.dat` → `data.Forced` (LongArray упакованных `ChunkPos`) |
-| Сгенерированные чанки и время сохранения | заголовок `<dim>/region/r.X.Z.mca` (4 KiB позиций + 4 KiB меток времени) |
-| Рельеф | блоки чанков из `<dim>/region/r.X.Z.mca`, только для регионов на экране |
-| Биомы | `sections[].biomes` тех же чанков (ячейки 4x4x4) |
+| Данные                                   | Источник в сохранении                                                      |
+| ---------------------------------------- | -------------------------------------------------------------------------- |
+| Название, версия, спавн, игровые правила | `level.dat` (NBT + gzip)                                                   |
+| Игрок в одиночном мире                   | `level.dat` → `Data.Player.Pos`                                            |
+| Игроки на сервере                        | `playerdata/<uuid>.dat` → `Pos`, `Dimension`                               |
+| Чанки, закреплённые через `/forceload`   | `<dim>/data/chunks.dat` → `data.Forced` (LongArray упакованных `ChunkPos`) |
+| Сгенерированные чанки и время сохранения | заголовок `<dim>/region/r.X.Z.mca` (4 KiB позиций + 4 KiB меток времени)   |
+| Рельеф                                   | блоки чанков из `<dim>/region/r.X.Z.mca`, только для регионов на экране    |
+| Биомы                                    | `sections[].biomes` тех же чанков (ячейки 4x4x4)                           |
 
 При загрузке мира читаются только первые 8 KiB каждого `.mca`, поэтому мир на несколько ГБ открывается
 за секунды; полные чанки декодируются позже и только для тех регионов, которые вы действительно смотрите.
@@ -526,10 +526,10 @@ python3 -m http.server 8080   # и откройте http://localhost:8080
 ## Чего это **не** может знать
 
 Сохранение **не хранит**, какие чанки были загружены в памяти: это состояние работающего сервера. На
-странице показана реконструкция *тикетов*, которые существовали бы при запуске мира:
+странице показана реконструкция _тикетов_, которые существовали бы при запуске мира:
 
 - **Спавн-чанки**: определяются по самому миру, ничего выбирать не нужно. Если в мире есть правило
-  `spawnChunkRadius` (1.20.5+), берётся его значение — это радиус *тикета*, поэтому R даёт (2R-1)²
+  `spawnChunkRadius` (1.20.5+), берётся его значение — это радиус _тикета_, поэтому R даёт (2R-1)²
   чанков с entity ticking, (2R+1)² с block ticking и (2R+3)² загруженных; 0 их отключает. В более
   старых мирах действует классическое поведение, равное радиусу 10 → 19×19 с entity ticking. В мирах
   с 1.21.9 их нет вовсе: спавн-чанки убрали из игры. Ручная настройка остаётся на всякий случай.
@@ -538,7 +538,7 @@ python3 -m http.server 8080   # и откройте http://localhost:8080
 - **Чанклоадеры** из эндер-жемчуга, порталов или модов: они зависят от состояния работающего сервера и
   на диск не пишутся, поэтому не отображаются.
 
-Модель тикетов обычная: радиус *r* с *entity ticking*, ещё одно кольцо с *block ticking* и ещё одно —
+Модель тикетов обычная: радиус _r_ с _entity ticking_, ещё одно кольцо с _block ticking_ и ещё одно —
 просто загруженное (граница).
 
 ## Структура
