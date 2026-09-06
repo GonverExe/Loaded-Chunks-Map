@@ -124,21 +124,17 @@ code {
 }
 .icon-btn:hover { background: var(--code-bg); }
 .icon-btn svg { width: 17px; height: 17px; }
-.lang-switch { display: flex; border-radius: 999px; overflow: hidden; }
-.lang-switch button {
-  font: 600 12px/1 system-ui, sans-serif;
-  letter-spacing: .04em;
+.lang-select {
+  width: auto;
   border: 0;
-  padding: 8px 10px;
+  border-radius: 999px;
   background: transparent;
-  color: var(--muted);
+  color: var(--text);
+  font: 500 13px/1 system-ui, sans-serif;
+  padding: 8px 6px;
   cursor: pointer;
 }
-.lang-switch button:hover { color: var(--text); }
-.lang-switch button[aria-pressed="true"] {
-  background: var(--accent);
-  color: #fff;
-}
+.lang-select:hover { background: var(--code-bg); }
 
 /* ---------- Hero ---------- */
 .hero {
@@ -265,6 +261,13 @@ select.small { padding: 4px 8px; font-size: 13px; width: auto; }
 .dot.player, .sw.player { background: var(--player); }
 .dot.force, .sw.force { background: var(--force); }
 .sw.gen { background: var(--gen); }
+.sw.terrain { background: linear-gradient(135deg, #7fb238 55%, #4040ff); }
+.mode-select { margin: 2px 0 8px; padding: 5px 8px; font-size: 13px; }
+.terrain-status {
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+}
 
 #warnList { margin: 0; padding-left: 18px; font-size: 12px; color: var(--warn); }
 

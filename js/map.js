@@ -37,7 +37,7 @@
     this.loaded = new Map();
     this.world = null;
     this.colors = readColors();
-    this.layers = { generated: true, activity: false, loaded: true, markers: true, grid: true };
+    this.layers = { terrain: true, generated: true, activity: false, loaded: true, markers: true, grid: true };
     this.hover = null;
     this._raf = null;
     this._bindEvents();
@@ -133,6 +133,7 @@
 
   ChunkMap.prototype.setData = function (world, dim, loaded) {
     this.world = world; this.dim = dim; this.loaded = loaded || new Map();
+    if (global.Terrain) Terrain.setDimension(dim);
     this.draw();
   };
 
@@ -238,6 +239,7 @@
     const px = Math.max(1, s);
 
     // Chunks ya generados en disco (contexto del mapa).
+    // Se dibujan primero: el terreno, cuando llega, los tapa.
     if (this.layers.generated) {
       const now = Date.now() / 1000;
       const recentCut = 60 * 60 * 24 * 7;   // 7 días
@@ -254,16 +256,23 @@
       }
     }
 
-    // Chunks cargados.
+    // Terreno renderizado desde los region files.
+    let terrainDrawn = false;
+    if (this.layers.terrain && global.Terrain) terrainDrawn = this._drawTerrain(min, max);
+
+    // Chunks cargados. Sobre el terreno se pintan translúcidos para no taparlo,
+    // y se remata el borde del área para que siga leyéndose de un vistazo.
     if (this.layers.loaded) {
+      const k = terrainDrawn ? 0.3 : 1;
       for (const c of this.loaded.values()) {
         if (!inView(c.x, c.z)) continue;
         const p = this.chunkToScreen(c.x, c.z);
-        ctx.globalAlpha = LEVEL_ALPHA[c.level];
+        ctx.globalAlpha = LEVEL_ALPHA[c.level] * k;
         ctx.fillStyle = C[ChunkModel.dominantSource(c)] || C.spawn;
         ctx.fillRect(p.x, p.y, px, px);
       }
       ctx.globalAlpha = 1;
+      if (terrainDrawn && s >= 0.8) this._outlineLoaded(inView);
     }
 
     // Rejillas.
@@ -281,6 +290,67 @@
       ctx.strokeRect(p.x + 0.5, p.y + 0.5, px, px);
     }
     this._scaleBar();
+  };
+
+  /* Contorno del área cargada: solo las aristas que dan a un chunk no cargado. */
+  ChunkMap.prototype._outlineLoaded = function (inView) {
+    const ctx = this.ctx, s = this.scale;
+    const bySource = new Map();
+    for (const c of this.loaded.values()) {
+      if (!inView(c.x, c.z)) continue;
+      const src = ChunkModel.dominantSource(c);
+      let list = bySource.get(src);
+      if (!list) { list = []; bySource.set(src, list); }
+      list.push(c);
+    }
+    ctx.lineWidth = 1.5;
+    for (const [src, list] of bySource) {
+      ctx.strokeStyle = this.colors[src] || this.colors.spawn;
+      ctx.beginPath();
+      for (const c of list) {
+        const p = this.chunkToScreen(c.x, c.z);
+        if (!this.loaded.has(c.x + ',' + (c.z - 1))) { ctx.moveTo(p.x, p.y); ctx.lineTo(p.x + s, p.y); }
+        if (!this.loaded.has(c.x + ',' + (c.z + 1))) { ctx.moveTo(p.x, p.y + s); ctx.lineTo(p.x + s, p.y + s); }
+        if (!this.loaded.has((c.x - 1) + ',' + c.z)) { ctx.moveTo(p.x, p.y); ctx.lineTo(p.x, p.y + s); }
+        if (!this.loaded.has((c.x + 1) + ',' + c.z)) { ctx.moveTo(p.x + s, p.y); ctx.lineTo(p.x + s, p.y + s); }
+      }
+      ctx.stroke();
+    }
+  };
+
+  /*
+   * Dibuja las teselas de terreno que ya estén listas y pide las que faltan,
+   * empezando por las del centro de la vista. Devuelve si pintó alguna.
+   */
+  ChunkMap.prototype._drawTerrain = function (min, max) {
+    const ctx = this.ctx;
+    const rx0 = Math.floor(min.x / 32), rx1 = Math.floor(max.x / 32);
+    const rz0 = Math.floor(min.z / 32), rz1 = Math.floor(max.z / 32);
+    const side = 32 * this.scale;
+    const cx = (min.x + max.x) / 64, cz = (min.z + max.z) / 64;   // centro, en regiones
+
+    const missing = [];
+    let drawn = false;
+    ctx.imageSmoothingEnabled = this.scale < 1;
+    for (let rz = rz0; rz <= rz1; rz++) {
+      for (let rx = rx0; rx <= rx1; rx++) {
+        if (!this.dim.regions || !this.dim.regions.has(rx + ',' + rz)) continue;
+        const bmp = Terrain.get(rx, rz);
+        if (bmp) {
+          const p = this.chunkToScreen(rx * 32, rz * 32);
+          ctx.drawImage(bmp, p.x, p.y, side, side);
+          drawn = true;
+        } else {
+          missing.push({ rx, rz, d: (rx - cx) * (rx - cx) + (rz - cz) * (rz - cz) });
+        }
+      }
+    }
+    ctx.imageSmoothingEnabled = true;
+    if (missing.length) {
+      missing.sort((a, b) => a.d - b.d);
+      Terrain.request(missing);
+    }
+    return drawn;
   };
 
   ChunkMap.prototype._grid = function (step, color, min, max) {

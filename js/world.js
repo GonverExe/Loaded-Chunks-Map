@@ -34,6 +34,7 @@
       id,
       label: DIM_LABELS[id] || id,
       generated: new Map(),   // "x,z" -> { x, z, mtime }
+      regions: new Map(),     // "rx,rz" -> File, para renderizar el terreno luego
       forced: [],             // [{x,z}]
       players: [],            // [{name, x, z, y, source}]
       regionFiles: 0,
@@ -183,7 +184,15 @@
         const nbt = await NBT.parse(await readFile(f));
         const uuid = f.name.replace(/\.dat$/i, '');
         const p = playerFromNBT(nbt.value, uuid.slice(0, 8) + '…', 'playerdata');
-        if (p) getDim(world, p.dimension).players.push(p);
+        if (p) {
+          const dim = getDim(world, p.dimension);
+          // En un mundo de un jugador, level.dat y playerdata guardan a la misma
+          // persona: se conserva la de playerdata, que al menos trae UUID.
+          const dup = dim.players.findIndex((q) => q.source === 'level.dat' &&
+            Math.abs(q.x - p.x) < 0.01 && Math.abs(q.z - p.z) < 0.01);
+          if (dup >= 0) dim.players.splice(dup, 1);
+          dim.players.push(p);
+        }
       } catch (e) {
         world.warnings.push({ file: relPath(f), msg: e.message });
       }
@@ -197,8 +206,10 @@
       const dim = getDim(world, dimensionOf(path));
       dim.regionFiles++;
       if (m) {
+        const rx = parseInt(m[1], 10), rz = parseInt(m[2], 10);
+        dim.regions.set(rx + ',' + rz, f);
         try {
-          await readRegionHeader(f, parseInt(m[1], 10), parseInt(m[2], 10), dim);
+          await readRegionHeader(f, rx, rz, dim);
         } catch (e) {
           world.warnings.push({ file: path, msg: e.message });
         }

@@ -28,16 +28,22 @@
     $('themeBtn').setAttribute('aria-label', I18n.t(key));
   }
 
-  function paintLangButtons() {
-    document.querySelectorAll('.lang-switch button').forEach((b) => {
-      b.setAttribute('aria-pressed', String(b.dataset.lang === I18n.lang));
-    });
+  /* El selector se rellena con los nombres nativos de cada idioma. */
+  function paintLangSelect() {
+    const sel = $('langSelect');
+    if (!sel.options.length) {
+      for (const code of I18n.langs) {
+        const o = document.createElement('option');
+        o.value = code;
+        o.textContent = I18n.names[code] || code;
+        sel.appendChild(o);
+      }
+    }
+    sel.value = I18n.lang;
   }
 
   $('themeBtn').addEventListener('click', () => Theme.toggle());
-  document.querySelectorAll('.lang-switch button').forEach((b) => {
-    b.addEventListener('click', () => I18n.set(b.dataset.lang));
-  });
+  $('langSelect').addEventListener('change', (e) => I18n.set(e.target.value));
 
   Theme.onChange(() => {
     paintThemeButton();
@@ -45,7 +51,7 @@
   });
 
   I18n.onChange(() => {
-    paintLangButtons();
+    paintLangSelect();
     paintThemeButton();
     if (lastErrorKey) $('dropHint').innerHTML = '<span class="err">' + escapeHtml(I18n.t(lastErrorKey)) + '</span>';
     if (world && currentDim) {
@@ -53,6 +59,7 @@
       renderWarnings();
       renderDimSelect();
       renderSpawnNote();
+      checkTerrainSupport();
       update(false);          // recalcula los textos de cada chunk
     }
     if (map) map.refreshText();
@@ -62,9 +69,7 @@
 
   const drop = $('drop');
   $('pickDir').addEventListener('click', () => $('dirInput').click());
-  $('pickFiles').addEventListener('click', () => $('fileInput').click());
   $('dirInput').addEventListener('change', (e) => handleFiles(Array.from(e.target.files)));
-  $('fileInput').addEventListener('change', (e) => handleFiles(Array.from(e.target.files)));
 
   ['dragenter', 'dragover'].forEach((ev) =>
     drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.add('over'); }));
@@ -144,7 +149,12 @@
 
   function showWorld() {
     $('app').hidden = false;
-    if (!map) map = new ChunkMap($('map'), $('tooltip'));
+    if (!map) {
+      map = new ChunkMap($('map'), $('tooltip'));
+      Terrain.onTile = () => map.draw();
+      Terrain.onProgress = renderTerrainProgress;
+    }
+    checkTerrainSupport();
 
     // Radio de spawn: de la gamerule si el mundo la trae, si no el clásico.
     $('spawnRadius').value = world.spawnChunkRadius != null ? world.spawnChunkRadius : SPAWN_RADIUS_CLASSIC;
@@ -172,6 +182,23 @@
     }
     if (!currentDim || !world.dimensions.has(currentDim.id)) currentDim = dims[0];
     sel.value = currentDim.id;
+  }
+
+  /* Sin Web Workers (típico al abrir el archivo con doble clic) no hay terreno. */
+  function checkTerrainSupport() {
+    const ok = Terrain.probe();
+    $('layerTerrain').disabled = !ok;
+    $('terrainMode').disabled = !ok;
+    if (!ok) $('layerTerrain').checked = false;
+    $('terrainNote').hidden = ok;
+    $('terrainNote').innerHTML = ok ? '' : I18n.t('terrain.unavailable');
+  }
+
+  function renderTerrainProgress(done, total) {
+    const el = $('terrainStatus');
+    if (!total || done >= total) { el.hidden = true; return; }
+    el.hidden = false;
+    el.textContent = I18n.t('terrain.rendering', { done: done, total: total });
   }
 
   function renderSpawnNote() {
@@ -218,8 +245,10 @@
     $('simDistOut').textContent = I18n.t('ctl.chunksGrid',
       { n: opts.simulationDistance, side: opts.simulationDistance * 2 + 1 });
 
+    Terrain.setMode($('terrainMode').value);
     const loaded = ChunkModel.compute(world, currentDim, opts);
     map.layers = {
+      terrain: $('layerTerrain').checked,
       generated: $('layerGenerated').checked,
       activity: $('layerActivity').checked,
       loaded: $('layerLoaded').checked,
@@ -265,7 +294,7 @@
   /* ---------- Controles ---------- */
 
   ['srcSpawn', 'srcPlayers', 'srcForce', 'spawnRadius', 'simDist',
-   'layerGenerated', 'layerActivity', 'layerLoaded', 'layerMarkers', 'layerGrid']
+   'layerTerrain', 'terrainMode', 'layerGenerated', 'layerActivity', 'layerLoaded', 'layerMarkers', 'layerGrid']
     .forEach((id) => $(id).addEventListener('input', () => update(false)));
 
   $('dimSelect').addEventListener('change', (e) => {
@@ -296,7 +325,7 @@
   $('reset').addEventListener('click', () => {
     world = null; currentDim = null;
     $('app').hidden = true;
-    $('dirInput').value = ''; $('fileInput').value = '';
+    $('dirInput').value = '';
     window.scrollTo({ top: 0, behavior: 'smooth' });
   });
 
@@ -309,7 +338,7 @@
 
   I18n.apply();
   Theme.paint();
-  paintLangButtons();
+  paintLangSelect();
   paintThemeButton();
   $('loadingText').textContent = I18n.t('loading.reading');
 })();

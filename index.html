@@ -30,10 +30,7 @@
       <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path>
     </svg>
   </button>
-  <div class="lang-switch" role="group" data-i18n-aria="settings.language">
-    <button type="button" data-lang="es" aria-pressed="true">ES</button>
-    <button type="button" data-lang="en" aria-pressed="false">EN</button>
-  </div>
+  <select id="langSelect" class="lang-select" data-i18n-aria="settings.language"></select>
 </div>
 
 <header class="hero">
@@ -44,7 +41,6 @@
 
     <div id="drop" class="drop">
       <input type="file" id="dirInput" webkitdirectory directory multiple hidden>
-      <input type="file" id="fileInput" multiple hidden>
       <div class="drop-inner">
         <svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.6">
           <path d="M3 7.5A1.5 1.5 0 0 1 4.5 6h4l2 2.5h9A1.5 1.5 0 0 1 21 10v8a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 18z"/>
@@ -52,7 +48,6 @@
         <p data-i18n="drop.title"></p>
         <div class="btns">
           <button id="pickDir" class="btn primary" data-i18n="drop.pickDir"></button>
-          <button id="pickFiles" class="btn ghost" data-i18n="drop.pickFiles"></button>
         </div>
         <p class="hint" id="dropHint" data-i18n="drop.hint"></p>
       </div>
@@ -104,6 +99,12 @@
 
       <section class="card">
         <h2 data-i18n="card.layers"></h2>
+        <label class="chk"><input type="checkbox" id="layerTerrain" checked> <span data-i18n="layer.terrain"></span></label>
+        <select id="terrainMode" class="mode-select">
+          <option value="blocks" data-i18n="mode.blocks"></option>
+          <option value="biomes" data-i18n="mode.biomes"></option>
+        </select>
+        <p class="note" id="terrainNote" hidden></p>
         <label class="chk"><input type="checkbox" id="layerGenerated" checked> <span data-i18n="layer.generated"></span></label>
         <label class="chk"><input type="checkbox" id="layerActivity"> <span data-i18n="layer.activity"></span></label>
         <label class="chk"><input type="checkbox" id="layerLoaded" checked> <span data-i18n="layer.loaded"></span></label>
@@ -130,11 +131,13 @@
         <button id="gotoSpawn" class="btn small" data-i18n="btn.gotoSpawn"></button>
         <select id="gotoPlayer" class="small"></select>
         <button id="png" class="btn small" data-i18n="btn.png"></button>
+        <span id="terrainStatus" class="terrain-status" hidden></span>
         <span class="spacer"></span>
         <span class="legend">
           <span><i class="sw spawn"></i><span data-i18n="legend.spawn"></span></span>
           <span><i class="sw player"></i><span data-i18n="legend.player"></span></span>
           <span><i class="sw force"></i><span data-i18n="legend.force"></span></span>
+          <span><i class="sw terrain"></i><span data-i18n="legend.terrain"></span></span>
           <span><i class="sw gen"></i><span data-i18n="legend.generated"></span></span>
         </span>
       </div>
@@ -183,6 +186,8 @@
 
 <script src="js/i18n.js"></script>
 <script src="js/theme.js"></script>
+<script src="js/biomecolors.js"></script>
+<script src="js/terrain.js"></script>
 <script src="js/nbt.js"></script>
 <script src="js/world.js"></script>
 <script src="js/chunks.js"></script>
