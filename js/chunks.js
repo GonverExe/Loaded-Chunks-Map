@@ -4,13 +4,8 @@
 
   // Nivel de carga: cuanto más bajo, más "vivo" está el chunk.
   const LEVEL = { ENTITY: 0, TICKING: 1, BORDER: 2 };
-  const LEVEL_NAMES = ['entity ticking', 'block ticking', 'borde (cargado, sin tick)'];
 
-  const SOURCE_META = {
-    spawn:     { label: 'Spawn chunks',  color: '#4ade80' },
-    player:    { color: '#60a5fa', label: 'Jugador' },
-    forceload: { label: '/forceload',    color: '#c084fc' }
-  };
+  function levelName(level) { return I18n.t('level.' + level); }
 
   function key(x, z) { return x + ',' + z; }
 
@@ -32,7 +27,8 @@
 
   /*
    * options: { spawnRadius, simulationDistance, useSpawn, usePlayers, useForceload }
-   * Devuelve Map "x,z" -> { x, z, level, sources }.
+   * Devuelve Map "x,z" -> { x, z, level, sources }, con los textos ya resueltos
+   * en el idioma activo (se recalcula al cambiarlo).
    */
   function compute(world, dim, options) {
     const map = new Map();
@@ -42,19 +38,23 @@
       const cx = Math.floor(world.spawn.x / 16);
       const cz = Math.floor(world.spawn.z / 16);
       stamp(map, cx, cz, options.spawnRadius, 'spawn',
-            'spawn del mundo en ' + world.spawn.x + ', ' + world.spawn.z);
+            I18n.t('detail.spawn', { x: world.spawn.x, z: world.spawn.z }));
     }
 
     if (options.usePlayers) {
       for (const p of dim.players) {
         stamp(map, p.chunkX, p.chunkZ, options.simulationDistance, 'player',
-              p.name + ' en ' + Math.round(p.x) + ', ' + Math.round(p.z));
+              I18n.t('detail.player', {
+                name: WorldReader.playerLabel(p),
+                x: Math.round(p.x),
+                z: Math.round(p.z)
+              }));
       }
     }
 
     if (options.useForceload) {
       for (const f of dim.forced) {
-        stamp(map, f.x, f.z, 0, 'forceload', 'chunk forzado ' + f.x + ', ' + f.z);
+        stamp(map, f.x, f.z, 0, 'forceload', I18n.t('detail.force', { x: f.x, z: f.z }));
       }
     }
 
@@ -86,5 +86,5 @@
     return best ? best.source : 'spawn';
   }
 
-  global.ChunkModel = { compute, stats, dominantSource, LEVEL, LEVEL_NAMES, SOURCE_META };
+  global.ChunkModel = { compute, stats, dominantSource, levelName, LEVEL };
 })(window);

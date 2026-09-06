@@ -5,20 +5,42 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Loaded Chunks Map — mapa de chunks cargados de tu mundo de Minecraft</title>
 <meta name="description" content="Suelta la carpeta de tu mundo de Minecraft Java y mira qué chunks quedan cargados: spawn chunks, /forceload y el área alrededor de cada jugador. Todo en tu navegador, sin subir nada.">
+<meta name="theme-color" content="#070a11">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%230b0f17'/><rect x='6' y='6' width='9' height='9' fill='%234ade80'/><rect x='17' y='6' width='9' height='9' fill='%2360a5fa'/><rect x='6' y='17' width='9' height='9' fill='%23c084fc'/><rect x='17' y='17' width='9' height='9' fill='%231c2433'/></svg>">
 <link rel="stylesheet" href="css/styles.css">
+<script>
+  /* Tema antes del primer pintado, para que no haya destello. */
+  (function () {
+    try {
+      var t = localStorage.getItem('lcm.theme');
+      if (t !== 'light' && t !== 'dark') {
+        t = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+      }
+      document.documentElement.setAttribute('data-theme', t);
+    } catch (e) {}
+  })();
+</script>
 </head>
 <body>
 
+<div class="topbar">
+  <button id="themeBtn" class="icon-btn" type="button" data-i18n-title="settings.theme.toLight" data-i18n-aria="settings.theme.toLight">
+    <svg id="themeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+      <circle cx="12" cy="12" r="4"></circle>
+      <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path>
+    </svg>
+  </button>
+  <div class="lang-switch" role="group" data-i18n-aria="settings.language">
+    <button type="button" data-lang="es" aria-pressed="true">ES</button>
+    <button type="button" data-lang="en" aria-pressed="false">EN</button>
+  </div>
+</div>
+
 <header class="hero">
   <div class="wrap">
-    <div class="badge">100&nbsp;% en tu navegador · no se sube ningún archivo</div>
-    <h1>Mira qué <span class="grad">chunks</span> se quedan cargados en tu mundo</h1>
-    <p class="lead">
-      Suelta la carpeta de tu mundo de <strong>Minecraft: Java Edition</strong> (la que está dentro de
-      <code>saves/</code>) y te dibujo el mapa: <strong>spawn chunks</strong>, chunks fijados con
-      <code>/forceload</code> y el área que mantiene cargada cada jugador guardado, sobre el terreno que ya has generado.
-    </p>
+    <div class="badge" data-i18n="hero.badge"></div>
+    <h1 data-i18n="hero.title"></h1>
+    <p class="lead" data-i18n="hero.lead"></p>
 
     <div id="drop" class="drop">
       <input type="file" id="dirInput" webkitdirectory directory multiple hidden>
@@ -27,22 +49,22 @@
         <svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.6">
           <path d="M3 7.5A1.5 1.5 0 0 1 4.5 6h4l2 2.5h9A1.5 1.5 0 0 1 21 10v8a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 18z"/>
         </svg>
-        <p><strong>Arrastra aquí la carpeta del mundo</strong> o</p>
+        <p data-i18n="drop.title"></p>
         <div class="btns">
-          <button id="pickDir" class="btn primary">Elegir carpeta…</button>
-          <button id="pickFiles" class="btn ghost">Elegir archivos sueltos</button>
+          <button id="pickDir" class="btn primary" data-i18n="drop.pickDir"></button>
+          <button id="pickFiles" class="btn ghost" data-i18n="drop.pickFiles"></button>
         </div>
-        <p class="hint" id="dropHint">Necesito al menos <code>level.dat</code> y la carpeta <code>region/</code>. Solo leo cabeceras, así que va rápido incluso con mundos grandes.</p>
+        <p class="hint" id="dropHint" data-i18n="drop.hint"></p>
       </div>
     </div>
 
     <details class="where">
-      <summary>¿Dónde está mi carpeta de mundos?</summary>
+      <summary data-i18n="where.summary"></summary>
       <ul>
-        <li><strong>Windows</strong>: <code>%appdata%\.minecraft\saves\</code></li>
-        <li><strong>macOS</strong>: <code>~/Library/Application Support/minecraft/saves/</code></li>
-        <li><strong>Linux</strong>: <code>~/.minecraft/saves/</code></li>
-        <li><strong>Servidor</strong>: la carpeta indicada en <code>level-name</code> de <code>server.properties</code> (por defecto <code>world/</code>)</li>
+        <li data-i18n="where.win"></li>
+        <li data-i18n="where.mac"></li>
+        <li data-i18n="where.linux"></li>
+        <li data-i18n="where.server"></li>
       </ul>
     </details>
   </div>
@@ -52,79 +74,75 @@
   <div class="app-grid">
     <aside class="panel">
       <section class="card" id="worldCard">
-        <h2>Mundo</h2>
+        <h2 data-i18n="card.world"></h2>
         <dl id="worldInfo"></dl>
       </section>
 
       <section class="card">
-        <h2>Dimensión</h2>
+        <h2 data-i18n="card.dimension"></h2>
         <select id="dimSelect"></select>
       </section>
 
       <section class="card">
-        <h2>Fuentes de carga</h2>
-        <label class="chk"><input type="checkbox" id="srcSpawn" checked><span class="dot spawn"></span> Spawn chunks</label>
+        <h2 data-i18n="card.sources"></h2>
+        <label class="chk"><input type="checkbox" id="srcSpawn" checked><span class="dot spawn"></span> <span data-i18n="src.spawn"></span></label>
         <label class="range">
-          Radio de spawn: <output id="spawnRadiusOut"></output>
+          <span data-i18n="ctl.spawnRadius"></span> <output id="spawnRadiusOut"></output>
           <input type="range" id="spawnRadius" min="0" max="32" step="1">
         </label>
         <p class="note" id="spawnNote"></p>
 
-        <label class="chk"><input type="checkbox" id="srcPlayers" checked><span class="dot player"></span> Jugadores guardados</label>
+        <label class="chk"><input type="checkbox" id="srcPlayers" checked><span class="dot player"></span> <span data-i18n="src.players"></span></label>
         <label class="range">
-          Distancia de simulación: <output id="simDistOut"></output>
+          <span data-i18n="ctl.simDist"></span> <output id="simDistOut"></output>
           <input type="range" id="simDist" min="2" max="32" step="1" value="10">
         </label>
-        <p class="note">La distancia de simulación no se guarda en el mundo (está en <code>server.properties</code> o en las opciones del cliente). Ajústala a la de tu partida.</p>
+        <p class="note" data-i18n="note.simDist"></p>
 
-        <label class="chk"><input type="checkbox" id="srcForce" checked><span class="dot force"></span> <code>/forceload</code></label>
+        <label class="chk"><input type="checkbox" id="srcForce" checked><span class="dot force"></span> <span data-i18n="src.force"></span></label>
       </section>
 
       <section class="card">
-        <h2>Capas</h2>
-        <label class="chk"><input type="checkbox" id="layerGenerated" checked> Chunks generados</label>
-        <label class="chk"><input type="checkbox" id="layerActivity"> Resaltar guardados hace &lt;7 días</label>
-        <label class="chk"><input type="checkbox" id="layerLoaded" checked> Chunks cargados</label>
-        <label class="chk"><input type="checkbox" id="layerMarkers" checked> Marcadores</label>
-        <label class="chk"><input type="checkbox" id="layerGrid" checked> Rejilla y ejes</label>
+        <h2 data-i18n="card.layers"></h2>
+        <label class="chk"><input type="checkbox" id="layerGenerated" checked> <span data-i18n="layer.generated"></span></label>
+        <label class="chk"><input type="checkbox" id="layerActivity"> <span data-i18n="layer.activity"></span></label>
+        <label class="chk"><input type="checkbox" id="layerLoaded" checked> <span data-i18n="layer.loaded"></span></label>
+        <label class="chk"><input type="checkbox" id="layerMarkers" checked> <span data-i18n="layer.markers"></span></label>
+        <label class="chk"><input type="checkbox" id="layerGrid" checked> <span data-i18n="layer.grid"></span></label>
       </section>
 
       <section class="card">
-        <h2>Resumen</h2>
+        <h2 data-i18n="card.summary"></h2>
         <dl id="statsInfo"></dl>
       </section>
 
       <section class="card" id="warnCard" hidden>
-        <h2>Avisos</h2>
+        <h2 data-i18n="card.warnings"></h2>
         <ul id="warnList"></ul>
       </section>
 
-      <button id="reset" class="btn ghost wide">Cargar otro mundo</button>
+      <button id="reset" class="btn ghost wide" data-i18n="btn.reset"></button>
     </aside>
 
     <div class="map-wrap">
       <div class="map-toolbar">
-        <button id="fit" class="btn small">Encajar vista</button>
-        <button id="gotoSpawn" class="btn small">Ir al spawn</button>
+        <button id="fit" class="btn small" data-i18n="btn.fit"></button>
+        <button id="gotoSpawn" class="btn small" data-i18n="btn.gotoSpawn"></button>
         <select id="gotoPlayer" class="small"></select>
-        <button id="png" class="btn small">Exportar PNG</button>
+        <button id="png" class="btn small" data-i18n="btn.png"></button>
         <span class="spacer"></span>
         <span class="legend">
-          <span><i class="sw spawn"></i>spawn</span>
-          <span><i class="sw player"></i>jugador</span>
-          <span><i class="sw force"></i>forceload</span>
-          <span><i class="sw gen"></i>generado</span>
+          <span><i class="sw spawn"></i><span data-i18n="legend.spawn"></span></span>
+          <span><i class="sw player"></i><span data-i18n="legend.player"></span></span>
+          <span><i class="sw force"></i><span data-i18n="legend.force"></span></span>
+          <span><i class="sw gen"></i><span data-i18n="legend.generated"></span></span>
         </span>
       </div>
       <div class="canvas-holder">
         <canvas id="map"></canvas>
         <div id="tooltip" class="tooltip" hidden></div>
       </div>
-      <p class="disclaimer">
-        Un save <strong>no guarda</strong> qué chunks estaban cargados en memoria: esto es una reconstrucción de los
-        <em>tickets</em> que existirían al arrancar el mundo con los ajustes de la izquierda. Los chunks mantenidos por
-        perlas de ender, portales o mods no aparecen.
-      </p>
+      <p class="disclaimer" data-i18n="disclaimer"></p>
     </div>
   </div>
 </main>
@@ -132,37 +150,39 @@
 <div id="loading" class="loading" hidden>
   <div class="loading-box">
     <div class="bar"><div id="bar" class="bar-fill"></div></div>
-    <p id="loadingText">Leyendo el mundo…</p>
+    <p id="loadingText"></p>
   </div>
 </div>
 
 <section class="explain wrap">
-  <h2>Qué se puede saber de verdad desde la carpeta</h2>
+  <h2 data-i18n="explain.title"></h2>
   <div class="cols">
     <article>
-      <h3>Spawn chunks</h3>
-      <p>El spawn del mundo (<code>SpawnX/SpawnZ</code> en <code>level.dat</code>) mantiene un cuadrado de chunks cargados siempre, con el mundo abierto y sin nadie cerca. Si tu versión tiene la gamerule <code>spawnChunkRadius</code>, la leo del propio mundo; si no, uso el comportamiento clásico (19×19 con ticking más un borde).</p>
+      <h3 data-i18n="explain.spawn.h"></h3>
+      <p data-i18n="explain.spawn.p"></p>
     </article>
     <article>
-      <h3>/forceload</h3>
-      <p>Los chunks fijados con <code>/forceload add</code> se guardan en <code>data/chunks.dat</code> de cada dimensión como una lista de posiciones empaquetadas. Estos sí son un dato exacto del disco.</p>
+      <h3 data-i18n="explain.force.h"></h3>
+      <p data-i18n="explain.force.p"></p>
     </article>
     <article>
-      <h3>Jugadores</h3>
-      <p>Cada jugador carga los chunks a su alrededor según la distancia de simulación del servidor. Leo su última posición de <code>playerdata/*.dat</code> (o del <code>Player</code> de <code>level.dat</code> en un mundo de un jugador) y dibujo esa zona.</p>
+      <h3 data-i18n="explain.players.h"></h3>
+      <p data-i18n="explain.players.p"></p>
     </article>
     <article>
-      <h3>Terreno generado</h3>
-      <p>De cada <code>region/r.X.Z.mca</code> leo solo la cabecera: qué chunks existen y cuándo se guardaron por última vez. Sirve de fondo del mapa y para ver por dónde has estado últimamente.</p>
+      <h3 data-i18n="explain.terrain.h"></h3>
+      <p data-i18n="explain.terrain.p"></p>
     </article>
   </div>
-  <p class="fine">Los llamados <em>chunk loaders</em> hechos con perlas de ender, portales del Nether o mods dependen del estado en ejecución del servidor y no quedan escritos en el save, así que no se pueden reconstruir desde aquí.</p>
+  <p class="fine" data-i18n="explain.fine"></p>
 </section>
 
 <footer class="foot wrap">
-  <p>Todo el procesado ocurre en tu navegador: los archivos nunca salen de tu ordenador.</p>
+  <p data-i18n="foot"></p>
 </footer>
 
+<script src="js/i18n.js"></script>
+<script src="js/theme.js"></script>
 <script src="js/nbt.js"></script>
 <script src="js/world.js"></script>
 <script src="js/chunks.js"></script>

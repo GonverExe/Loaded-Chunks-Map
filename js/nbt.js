@@ -87,7 +87,9 @@
     else if (b[0] === 0x78) format = 'deflate';           // zlib
     if (!format) return buffer;                            // NBT sin comprimir
     if (typeof DecompressionStream === 'undefined') {
-      throw new Error('Este navegador no soporta DecompressionStream (necesario para leer los .dat).');
+      const err = new Error(I18n.t('error.noDecompression'));
+      err.i18nKey = 'error.noDecompression';
+      throw err;
     }
     const stream = new Blob([buffer]).stream().pipeThrough(new DecompressionStream(format));
     return await new Response(stream).arrayBuffer();

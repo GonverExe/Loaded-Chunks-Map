@@ -6,6 +6,18 @@ dibuja un mapa de chunks: cuáles están generados y cuáles quedarían **cargad
 
 No hay backend, ni build, ni dependencias: los archivos nunca salen del ordenador.
 
+## Ajustes
+
+La barra flotante de la esquina superior derecha guarda dos preferencias en `localStorage`:
+
+- **Tema**: claro u oscuro. Por defecto sigue al del sistema (`prefers-color-scheme`) y cambia con él
+  mientras no elijas uno a mano. El canvas del mapa lee su paleta de las variables CSS, así que el mapa
+  cambia con el resto de la página.
+- **Idioma**: español o inglés, aplicado en caliente (también al tooltip, las estadísticas y los avisos).
+  Por defecto usa el del navegador.
+
+Los textos viven todos en `js/i18n.js`; para añadir un idioma basta con copiar un bloque y traducirlo.
+
 ## Uso
 
 Abre `index.html` (o sirve la carpeta con cualquier servidor estático / GitHub Pages) y arrastra la
@@ -54,6 +66,8 @@ y otro anillo más solo cargado (borde).
 ```
 index.html        landing + interfaz
 css/styles.css
+js/i18n.js        textos en español e inglés + cambio en caliente
+js/theme.js       modo claro / oscuro con preferencia recordada
 js/nbt.js         parser NBT (gzip/zlib vía DecompressionStream)
 js/world.js       lectura de la carpeta del mundo y de las cabeceras .mca
 js/chunks.js      cálculo de tickets → chunks cargados

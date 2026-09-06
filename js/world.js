@@ -130,7 +130,9 @@
     }
 
     if (!levelDat && regionFiles.length === 0) {
-      throw new Error('No he encontrado ni level.dat ni carpeta region/. ¿Seguro que es la carpeta de un mundo (la que está dentro de saves/)?');
+      const err = new Error(I18n.t('error.noWorld'));
+      err.i18nKey = 'error.noWorld';
+      throw err;
     }
 
     const total = regionFiles.length + forceloadFiles.length + playerFiles.length + (levelDat ? 1 : 0);
@@ -155,11 +157,11 @@
           if (!isNaN(r)) world.spawnChunkRadius = r;
         }
         if (d.Player) {
-          const p = playerFromNBT(d.Player, 'Jugador (level.dat)', 'level.dat');
+          const p = playerFromNBT(d.Player, null, 'level.dat');
           if (p) getDim(world, p.dimension).players.push(p);
         }
       } catch (e) {
-        world.warnings.push('No he podido leer level.dat: ' + e.message);
+        world.warnings.push({ file: 'level.dat', msg: e.message });
       }
       tick('level.dat');
     }
@@ -170,7 +172,7 @@
       try {
         await readForceload(f, dim);
       } catch (e) {
-        world.warnings.push('No he podido leer ' + relPath(f) + ': ' + e.message);
+        world.warnings.push({ file: relPath(f), msg: e.message });
       }
       tick('forceload');
     }
@@ -183,7 +185,7 @@
         const p = playerFromNBT(nbt.value, uuid.slice(0, 8) + '…', 'playerdata');
         if (p) getDim(world, p.dimension).players.push(p);
       } catch (e) {
-        world.warnings.push('No he podido leer ' + relPath(f) + ': ' + e.message);
+        world.warnings.push({ file: relPath(f), msg: e.message });
       }
       tick('playerdata');
     }
@@ -198,7 +200,7 @@
         try {
           await readRegionHeader(f, parseInt(m[1], 10), parseInt(m[2], 10), dim);
         } catch (e) {
-          world.warnings.push('No he podido leer ' + path + ': ' + e.message);
+          world.warnings.push({ file: path, msg: e.message });
         }
       }
       tick(f.name);
@@ -208,5 +210,10 @@
     return world;
   }
 
-  global.WorldReader = { load, DIM_LABELS };
+  /* Nombre visible de un jugador; el del level.dat se traduce al idioma activo. */
+  function playerLabel(player) {
+    return player.name || I18n.t('player.singleplayer');
+  }
+
+  global.WorldReader = { load, playerLabel, DIM_LABELS };
 })(window);

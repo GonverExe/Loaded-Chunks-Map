@@ -2,19 +2,30 @@
 (function (global) {
   'use strict';
 
-  const COLORS = {
-    bg: '#0b0f17',
-    generated: '#1c2433',
-    generatedRecent: '#2c3a52',
-    grid: 'rgba(255,255,255,0.05)',
-    regionGrid: 'rgba(255,255,255,0.12)',
-    axis: 'rgba(255,255,255,0.22)',
-    spawn: '#4ade80',
-    player: '#60a5fa',
-    forceload: '#c084fc',
-    text: '#e6edf7'
-  };
   const LEVEL_ALPHA = [0.95, 0.6, 0.28];
+  const MONO = '11px ui-monospace, SFMono-Regular, Menlo, monospace';
+
+  /* Los colores viven en el CSS para que sigan al tema activo. */
+  function readColors() {
+    const cs = getComputedStyle(document.documentElement);
+    const v = (name, fallback) => (cs.getPropertyValue(name).trim() || fallback);
+    return {
+      bg: v('--map-bg', '#0b0f17'),
+      generated: v('--map-gen', '#1c2433'),
+      grid: v('--map-grid', 'rgba(255,255,255,0.05)'),
+      regionGrid: v('--map-region-grid', 'rgba(255,255,255,0.12)'),
+      axis: v('--map-axis', 'rgba(255,255,255,0.22)'),
+      text: v('--map-text', '#e6edf7'),
+      scale: v('--map-scale', 'rgba(255,255,255,0.65)'),
+      scaleLine: v('--map-scale-line', 'rgba(255,255,255,0.5)'),
+      hover: v('--map-hover', '#ffffff'),
+      empty: v('--map-empty', 'rgba(255,255,255,0.25)'),
+      recentRGB: v('--map-recent-rgb', '245, 158, 11'),
+      spawn: v('--spawn', '#4ade80'),
+      player: v('--player', '#60a5fa'),
+      forceload: v('--force', '#c084fc')
+    };
+  }
 
   function ChunkMap(canvas, tooltip) {
     this.canvas = canvas;
@@ -25,6 +36,7 @@
     this.dim = null;
     this.loaded = new Map();
     this.world = null;
+    this.colors = readColors();
     this.layers = { generated: true, activity: false, loaded: true, markers: true, grid: true };
     this.hover = null;
     this._raf = null;
@@ -34,19 +46,17 @@
 
   ChunkMap.prototype._bindEvents = function () {
     const c = this.canvas;
-    let dragging = false, lastX = 0, lastY = 0, moved = false;
+    let dragging = false, lastX = 0, lastY = 0;
 
     c.addEventListener('mousedown', (e) => {
-      dragging = true; moved = false; lastX = e.clientX; lastY = e.clientY;
+      dragging = true; lastX = e.clientX; lastY = e.clientY;
       c.style.cursor = 'grabbing';
     });
     window.addEventListener('mouseup', () => { dragging = false; c.style.cursor = 'grab'; });
     window.addEventListener('mousemove', (e) => {
       if (dragging) {
-        const dx = e.clientX - lastX, dy = e.clientY - lastY;
-        if (Math.abs(dx) + Math.abs(dy) > 2) moved = true;
-        this.camX -= dx / this.scale;
-        this.camZ -= dy / this.scale;
+        this.camX -= (e.clientX - lastX) / this.scale;
+        this.camZ -= (e.clientY - lastY) / this.scale;
         lastX = e.clientX; lastY = e.clientY;
         this.draw();
       }
@@ -90,6 +100,12 @@
     }, { passive: false });
 
     window.addEventListener('resize', () => { this.resize(); });
+  };
+
+  /* Recarga la paleta tras un cambio de tema. */
+  ChunkMap.prototype.refreshTheme = function () {
+    this.colors = readColors();
+    this.draw();
   };
 
   ChunkMap.prototype.resize = function () {
@@ -149,17 +165,27 @@
     const rect = this.canvas.getBoundingClientRect();
     const p = this.screenToChunk(e.clientX - rect.left, e.clientY - rect.top);
     const cx = Math.floor(p.x), cz = Math.floor(p.z);
-    this.hover = { x: cx, z: cz };
+    this.hover = { x: cx, z: cz, clientX: e.clientX, clientY: e.clientY };
+    this._renderTooltip();
+    this.draw();
+  };
 
+  ChunkMap.prototype._renderTooltip = function () {
+    if (!this.hover) return;
+    const cx = this.hover.x, cz = this.hover.z;
     const k = cx + ',' + cz;
     const chunk = this.loaded.get(k);
     const gen = this.dim && this.dim.generated.get(k);
-    const lines = [];
-    lines.push('<b>Chunk ' + cx + ', ' + cz + '</b>');
-    lines.push('<span class="dim">Bloques ' + (cx * 16) + ', ' + (cz * 16) + ' → ' + (cx * 16 + 15) + ', ' + (cz * 16 + 15) + '</span>');
-    lines.push('<span class="dim">Región r.' + Math.floor(cx / 32) + '.' + Math.floor(cz / 32) + '.mca</span>');
+    const lines = ['<b>' + I18n.t('tip.chunk', { x: cx, z: cz }) + '</b>'];
+    lines.push('<span class="dim">' + I18n.t('tip.blocks', {
+      x1: cx * 16, z1: cz * 16, x2: cx * 16 + 15, z2: cz * 16 + 15
+    }) + '</span>');
+    lines.push('<span class="dim">' + I18n.t('tip.region', {
+      rx: Math.floor(cx / 32), rz: Math.floor(cz / 32)
+    }) + '</span>');
+
     if (chunk) {
-      lines.push('<span class="tag lvl' + chunk.level + '">' + ChunkModel.LEVEL_NAMES[chunk.level] + '</span>');
+      lines.push('<span class="tag lvl' + chunk.level + '">' + ChunkModel.levelName(chunk.level) + '</span>');
       const seen = new Set();
       for (const s of chunk.sources) {
         if (seen.has(s.detail)) continue;
@@ -167,22 +193,32 @@
         lines.push('· ' + s.detail);
       }
     } else {
-      lines.push('<span class="dim">No cargado</span>');
+      lines.push('<span class="dim">' + I18n.t('tip.notLoaded') + '</span>');
     }
+
     if (gen) {
-      lines.push(gen.mtime ? '<span class="dim">Generado · guardado ' + new Date(gen.mtime * 1000).toLocaleString('es-ES') + '</span>'
-                           : '<span class="dim">Generado</span>');
+      lines.push('<span class="dim">' + (gen.mtime
+        ? I18n.t('tip.generatedAt', { date: new Date(gen.mtime * 1000).toLocaleString(I18n.locale()) })
+        : I18n.t('tip.generated')) + '</span>');
     } else {
-      lines.push('<span class="dim">Sin generar</span>');
+      lines.push('<span class="dim">' + I18n.t('tip.ungenerated') + '</span>');
     }
+
     this.tooltip.innerHTML = lines.join('<br>');
     this.tooltip.hidden = false;
+
+    const rect = this.canvas.getBoundingClientRect();
     const tw = this.tooltip.offsetWidth, th = this.tooltip.offsetHeight;
-    let tx = e.clientX - rect.left + 16, ty = e.clientY - rect.top + 16;
+    let tx = this.hover.clientX - rect.left + 16, ty = this.hover.clientY - rect.top + 16;
     if (tx + tw > this.w) tx = this.w - tw - 8;
-    if (ty + th > this.h) ty = e.clientY - rect.top - th - 12;
+    if (ty + th > this.h) ty = this.hover.clientY - rect.top - th - 12;
     this.tooltip.style.left = tx + 'px';
     this.tooltip.style.top = ty + 'px';
+  };
+
+  /* Rehace los textos ya visibles tras un cambio de idioma. */
+  ChunkMap.prototype.refreshText = function () {
+    if (this.hover && !this.tooltip.hidden) this._renderTooltip();
     this.draw();
   };
 
@@ -192,8 +228,8 @@
   };
 
   ChunkMap.prototype._draw = function () {
-    const ctx = this.ctx, s = this.scale;
-    ctx.fillStyle = COLORS.bg;
+    const ctx = this.ctx, s = this.scale, C = this.colors;
+    ctx.fillStyle = C.bg;
     ctx.fillRect(0, 0, this.w, this.h);
     if (!this.dim) { this._drawEmpty(); return; }
 
@@ -209,11 +245,10 @@
         if (!inView(c.x, c.z)) continue;
         const p = this.chunkToScreen(c.x, c.z);
         if (this.layers.activity && c.mtime) {
-          const age = Math.max(0, now - c.mtime);
-          const t = Math.max(0, 1 - age / recentCut);
-          ctx.fillStyle = t > 0 ? 'rgba(245,158,11,' + (0.10 + t * 0.55).toFixed(3) + ')' : COLORS.generated;
+          const t = Math.max(0, 1 - Math.max(0, now - c.mtime) / recentCut);
+          ctx.fillStyle = t > 0 ? 'rgba(' + C.recentRGB + ',' + (0.10 + t * 0.55).toFixed(3) + ')' : C.generated;
         } else {
-          ctx.fillStyle = COLORS.generated;
+          ctx.fillStyle = C.generated;
         }
         ctx.fillRect(p.x, p.y, px, px);
       }
@@ -225,7 +260,7 @@
         if (!inView(c.x, c.z)) continue;
         const p = this.chunkToScreen(c.x, c.z);
         ctx.globalAlpha = LEVEL_ALPHA[c.level];
-        ctx.fillStyle = COLORS[ChunkModel.dominantSource(c)] || COLORS.spawn;
+        ctx.fillStyle = C[ChunkModel.dominantSource(c)] || C.spawn;
         ctx.fillRect(p.x, p.y, px, px);
       }
       ctx.globalAlpha = 1;
@@ -233,15 +268,15 @@
 
     // Rejillas.
     if (this.layers.grid) {
-      if (s >= 8) this._grid(1, COLORS.grid, min, max);
-      if (s * 32 >= 24) this._grid(32, COLORS.regionGrid, min, max);
+      if (s >= 8) this._grid(1, C.grid, min, max);
+      if (s * 32 >= 24) this._grid(32, C.regionGrid, min, max);
       this._axes();
     }
 
     if (this.layers.markers) this._markers();
     if (this.hover) {
       const p = this.chunkToScreen(this.hover.x, this.hover.z);
-      ctx.strokeStyle = '#ffffff';
+      ctx.strokeStyle = C.hover;
       ctx.lineWidth = 1.5;
       ctx.strokeRect(p.x + 0.5, p.y + 0.5, px, px);
     }
@@ -267,7 +302,7 @@
 
   ChunkMap.prototype._axes = function () {
     const ctx = this.ctx, p = this.chunkToScreen(0, 0);
-    ctx.strokeStyle = COLORS.axis; ctx.lineWidth = 1;
+    ctx.strokeStyle = this.colors.axis; ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(Math.round(p.x) + 0.5, 0); ctx.lineTo(Math.round(p.x) + 0.5, this.h);
     ctx.moveTo(0, Math.round(p.y) + 0.5); ctx.lineTo(this.w, Math.round(p.y) + 0.5);
@@ -275,17 +310,15 @@
   };
 
   ChunkMap.prototype._markers = function () {
-    const ctx = this.ctx;
     if (this.world && this.world.spawn && this.dim.id === 'minecraft:overworld') {
       const cx = Math.floor(this.world.spawn.x / 16), cz = Math.floor(this.world.spawn.z / 16);
       const p = this.chunkToScreen(cx + 0.5, cz + 0.5);
-      this._pin(p.x, p.y, COLORS.spawn, 'Spawn');
+      this._pin(p.x, p.y, this.colors.spawn, I18n.t('legend.spawn'));
     }
     for (const pl of this.dim.players) {
       const p = this.chunkToScreen(pl.chunkX + 0.5, pl.chunkZ + 0.5);
-      this._pin(p.x, p.y, COLORS.player, pl.name);
+      this._pin(p.x, p.y, this.colors.player, WorldReader.playerLabel(pl));
     }
-    ctx.font = '11px ui-monospace, SFMono-Regular, Menlo, monospace';
   };
 
   ChunkMap.prototype._pin = function (x, y, color, label) {
@@ -293,10 +326,15 @@
     ctx.beginPath();
     ctx.arc(x, y, 5, 0, Math.PI * 2);
     ctx.fillStyle = color; ctx.fill();
-    ctx.lineWidth = 2; ctx.strokeStyle = '#0b0f17'; ctx.stroke();
+    ctx.lineWidth = 2; ctx.strokeStyle = this.colors.bg; ctx.stroke();
     if (this.scale >= 1.2) {
-      ctx.font = '11px ui-monospace, SFMono-Regular, Menlo, monospace';
-      ctx.fillStyle = COLORS.text;
+      // Halo del color del fondo: el texto cae sobre chunks de colores fuertes.
+      ctx.font = MONO;
+      ctx.lineWidth = 3;
+      ctx.lineJoin = 'round';
+      ctx.strokeStyle = this.colors.bg;
+      ctx.strokeText(label, x + 9, y + 4);
+      ctx.fillStyle = this.colors.text;
       ctx.fillText(label, x + 9, y + 4);
     }
   };
@@ -308,23 +346,23 @@
     for (const t of targets) { if (t * this.scale >= 60) { chunks = t; break; } }
     const wpx = chunks * this.scale;
     const x = 14, y = this.h - 18;
-    ctx.strokeStyle = 'rgba(255,255,255,0.5)'; ctx.lineWidth = 2;
+    ctx.strokeStyle = this.colors.scaleLine; ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.moveTo(x, y); ctx.lineTo(x + wpx, y);
     ctx.moveTo(x, y - 4); ctx.lineTo(x, y + 4);
     ctx.moveTo(x + wpx, y - 4); ctx.lineTo(x + wpx, y + 4);
     ctx.stroke();
-    ctx.font = '11px ui-monospace, SFMono-Regular, Menlo, monospace';
-    ctx.fillStyle = 'rgba(255,255,255,0.65)';
-    ctx.fillText(chunks + ' chunks · ' + (chunks * 16) + ' bloques', x, y - 8);
+    ctx.font = MONO;
+    ctx.fillStyle = this.colors.scale;
+    ctx.fillText(I18n.t('map.scale', { chunks: chunks, blocks: chunks * 16 }), x, y - 8);
   };
 
   ChunkMap.prototype._drawEmpty = function () {
     const ctx = this.ctx;
-    ctx.fillStyle = 'rgba(255,255,255,0.25)';
+    ctx.fillStyle = this.colors.empty;
     ctx.font = '13px ui-monospace, SFMono-Regular, Menlo, monospace';
     ctx.textAlign = 'center';
-    ctx.fillText('Carga la carpeta de tu mundo para ver el mapa', this.w / 2, this.h / 2);
+    ctx.fillText(I18n.t('map.empty'), this.w / 2, this.h / 2);
     ctx.textAlign = 'left';
   };
 
