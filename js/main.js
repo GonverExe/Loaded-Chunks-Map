@@ -223,6 +223,7 @@
     /* ---------- Pintar la aplicación ---------- */
 
     function showWorld() {
+        $('hero').hidden = true;
         $('app').hidden = false;
         if (!map) {
             map = new ChunkMap($('map'), $('tooltip'));
@@ -240,7 +241,7 @@
         }
         checkTerrainSupport();
         checkStructureSupport();
-        renderLive();
+        startLive();
 
         // El radio sale de la versión y de las gamerules del propio mundo.
         $('spawnManual').checked = false;
@@ -273,14 +274,16 @@
         sel.value = currentDim.id;
     }
 
-    /* Sin Web Workers (típico al abrir el archivo con doble clic) no hay terreno. */
+    /*
+     * Sin Web Workers (típico al abrir el archivo con doble clic) no hay terreno.
+     * Fuera de ese caso el mapa siempre se pinta: ya no hay casilla para apagarlo.
+     */
+    let terrainSupported = true;
     function checkTerrainSupport() {
-        const ok = Terrain.probe();
-        $('layerTerrain').disabled = !ok;
-        $('terrainMode').disabled = !ok;
-        if (!ok) $('layerTerrain').checked = false;
-        $('terrainNote').hidden = ok;
-        $('terrainNote').innerHTML = ok ? '' : I18n.t('terrain.unavailable');
+        terrainSupported = Terrain.probe();
+        $('terrainMode').disabled = !terrainSupported;
+        $('terrainNote').hidden = terrainSupported;
+        $('terrainNote').innerHTML = terrainSupported ? '' : I18n.t('terrain.unavailable');
     }
 
     function renderTerrainProgress(done, total) {
@@ -444,23 +447,20 @@
         $('srcSpawn').parentElement.style.opacity = nada ? 0.5 : '';
     }
 
+    /* Cada fila trae su valor ya en HTML: el nombre pasa por los códigos §. */
     function renderWorldInfo() {
         const rows = [];
-        if (world.name) rows.push(['info.name', world.name]);
-        if (world.versionName) rows.push(['info.version', world.versionName]);
-        if (world.dataVersion) rows.push(['info.dataVersion', world.dataVersion]);
-        if (world.spawn) rows.push(['info.spawn', world.spawn.x + ', ' + world.spawn.z]);
+        if (world.name) {
+            rows.push(['info.name', '<span class="mc">' + mcFormat(world.name) + '</span>']);
+        }
+        if (world.versionName) rows.push(['info.version', escapeHtml(world.versionName)]);
         if (world.lastPlayed)
             rows.push([
                 'info.lastPlayed',
-                new Date(world.lastPlayed).toLocaleDateString(I18n.locale()),
+                escapeHtml(new Date(world.lastPlayed).toLocaleDateString(I18n.locale())),
             ]);
-        rows.push(['info.dimensions', world.dimensions.size]);
         $('worldInfo').innerHTML = rows
-            .map(
-                ([k, v]) =>
-                    '<dt>' + escapeHtml(I18n.t(k)) + '</dt><dd>' + escapeHtml(String(v)) + '</dd>',
-            )
+            .map(([k, v]) => '<dt>' + escapeHtml(I18n.t(k)) + '</dt><dd>' + v + '</dd>')
             .join('');
     }
 
@@ -477,6 +477,27 @@
             .join('');
     }
 
+    /*
+     * ¿Se enseña al jugador? Solo si el mundo está abierto: alguien desconectado
+     * no mantiene ningún chunk cargado, así que su posición guardada no es una
+     * fuente de carga, es solo el sitio donde lo dejó.
+     *
+     * Cuando no se puede saber (navegador sin File System Access API, o mundo
+     * cargado sin carpeta relegible) se enseña igual: es mejor eso que esconder
+     * al jugador sin motivo.
+     */
+    function playersVisible() {
+        return !window.Live || Live.openState() !== 'closed';
+    }
+
+    /* Si el jugador está oculto por mundo cerrado, se dice; si no, estorba. */
+    function renderPlayersNote() {
+        const nota = $('playersNote');
+        const oculto = !playersVisible();
+        nota.hidden = !oculto;
+        if (oculto) nota.textContent = I18n.t('note.playersClosed');
+    }
+
     function options() {
         return {
             // Radio de ticket: el detectado en el mundo, salvo ajuste manual.
@@ -485,7 +506,7 @@
                 : spawnState().radius,
             simulationDistance: parseInt($('simDist').value, 10),
             useSpawn: $('srcSpawn').checked,
-            usePlayers: $('srcPlayers').checked,
+            usePlayers: $('srcPlayers').checked && playersVisible(),
             useForceload: $('srcForce').checked,
         };
     }
@@ -499,6 +520,7 @@
             side: Math.max(0, opts.spawnRadius * 2 - 1),
         });
         renderSpawnNote();
+        renderPlayersNote();
         $('simDistOut').textContent = I18n.t('ctl.chunksGrid', {
             n: opts.simulationDistance,
             side: opts.simulationDistance * 2 + 1,
@@ -507,11 +529,12 @@
         Terrain.setMode($('terrainMode').value);
         const loaded = ChunkModel.compute(world, currentDim, opts);
         map.layers = {
-            terrain: $('layerTerrain').checked,
+            terrain: terrainSupported,
             generated: false, // capa retirada: el relleno gris tapaba el terreno
-            activity: $('layerActivity').checked,
+            activity: false, // capa retirada de la interfaz: siempre apagada
             loaded: $('layerLoaded').checked,
             markers: $('layerMarkers').checked,
+            players: playersVisible(),
             grid: $('layerGrid').checked,
         };
         Structures.setDimension(currentDim);
@@ -535,6 +558,8 @@
             ['stats.playersHere', currentDim.players.length],
         ];
         if (gen) rows.push(['stats.ratio', ((s.total / gen) * 100).toFixed(1) + ' %']);
+        // Solo se enseña si hay alguno: si no, es una fila de ruido en todos los mundos.
+        if (world.stalePlayers) rows.push(['stats.stalePlayers', world.stalePlayers]);
         $('statsInfo').innerHTML = rows
             .map(
                 ([k, v]) =>
@@ -558,39 +583,85 @@
     /* ---------- Seguimiento en vivo ---------- */
 
     let liveMsg = null; // último resumen, para no perderlo al repintar
+    let liveEstado = null; // abierto/cerrado de la última vez que se pintó
 
     /*
-     * Estado del botón central. Tiene tres situaciones: no se puede (navegador
-     * sin File System Access API), parado, y siguiendo con cuenta atrás.
+     * Indicador central. Ya no se pulsa nada: el seguimiento arranca solo en
+     * cuanto hay una carpeta relegible, y esto solo cuenta lo que está pasando.
+     *
+     * Tres estados: sin poder mirar (navegador sin File System Access API o
+     * mundo cargado sin handle), mirando sin saber todavía, y sabiendo si el
+     * mundo está abierto o cerrado.
      */
     function renderLive(secondsLeft) {
-        const btn = $('liveBtn');
+        const chip = $('liveStatus');
         const nota = $('liveNote');
-        const on = Live.running();
 
-        btn.classList.toggle('on', on);
-        btn.setAttribute('aria-pressed', String(on));
-
-        if (!Live.supported()) {
-            btn.disabled = true;
-            $('liveLabel').textContent = I18n.t('live.start');
-            nota.textContent = I18n.t('live.unsupported');
+        // Sin carpeta relegible no hay nada que decir del mundo: se esconde la
+        // chapa entera en vez de afirmar que está cerrado, que no lo sabemos.
+        if (!Live.supported() || !Live.hasFolder()) {
+            chip.hidden = true;
+            nota.textContent = Live.supported()
+                ? I18n.t('live.nofolder')
+                : I18n.t('live.unsupported');
             nota.classList.add('warn');
             return;
         }
-        btn.disabled = false;
+        chip.hidden = false;
         nota.classList.remove('warn');
 
-        if (!on) {
-            $('liveLabel').textContent = I18n.t('live.start');
-            nota.textContent =
-                liveMsg || (Live.hasFolder() ? I18n.t('live.note') : I18n.t('live.pick'));
+        const estado = Live.openState();
+        /*
+         * El estado cambia solo con que pase el tiempo, sin que nadie escriba
+         * nada. Como de él depende que se vea al jugador, en cuanto cambia hay
+         * que rehacer el mapa: si no, la chincheta tardaría un ciclo en irse.
+         */
+        if (estado !== liveEstado) {
+            const primera = liveEstado === null;
+            liveEstado = estado;
+            if (!primera && world && currentDim) update(false);
+        }
+        chip.classList.toggle('open', estado === 'open');
+        chip.classList.toggle('closed', estado === 'closed');
+
+        if (estado === 'unknown') {
+            $('liveLabel').textContent = I18n.t('live.waiting');
+            nota.textContent = liveMsg || I18n.t('live.note');
             return;
         }
+
+        /*
+         * Con el mundo abierto interesa la cuenta atrás; con el mundo cerrado,
+         * saber desde cuándo lo está. Si el ciclo es de un par de segundos la
+         * cuenta atrás no aporta nada (parpadearía entre 1 y 0), así que se
+         * enseña directamente que está mirando.
+         */
         const s = secondsLeft == null ? Live.INTERVAL / 1000 : secondsLeft;
-        $('liveLabel').textContent =
-            s > 0 ? I18n.t('live.next', { s: s }) : I18n.t('live.checking');
+        const cuentaAtras = Live.INTERVAL >= 5000;
+        const cabeza = estado === 'open' ? I18n.t('live.open') : I18n.t('live.closed');
+        const cola =
+            estado === 'open'
+                ? cuentaAtras && s > 0
+                    ? I18n.t('live.next', { s: s })
+                    : I18n.t('live.checking')
+                : I18n.t('live.lastWrite', { t: hace(Live.lastWrite()) });
+        $('liveLabel').textContent = cabeza + ' · ' + cola;
         nota.textContent = liveMsg || I18n.t('live.note');
+    }
+
+    /*
+     * "hace 3 minutos", en el idioma activo. Intl.RelativeTimeFormat ya trae
+     * todas las traducciones, así que no hay que inventarse cadenas.
+     */
+    function hace(ms) {
+        if (!ms) return I18n.t('live.neverWrite');
+        const seg = Math.round((ms - Date.now()) / 1000);
+        const rtf = new Intl.RelativeTimeFormat(I18n.locale(), { numeric: 'auto' });
+        const abs = Math.abs(seg);
+        if (abs < 60) return rtf.format(seg, 'second');
+        if (abs < 3600) return rtf.format(Math.round(seg / 60), 'minute');
+        if (abs < 86400) return rtf.format(Math.round(seg / 3600), 'hour');
+        return rtf.format(Math.round(seg / 86400), 'day');
     }
 
     /*
@@ -632,28 +703,20 @@
         renderLive();
     }
 
-    $('liveBtn').addEventListener('click', async () => {
-        if (Live.running()) {
-            Live.stop();
-            liveMsg = null;
-            renderLive();
-            return;
-        }
-        // Sin carpeta relegible (mundo cargado por arrastre en un navegador sin
-        // handles) hay que pedirla una vez.
-        if (!Live.hasFolder()) {
-            try {
-                if (!(await Live.pickFolder())) return;
-            } catch (_) {
-                return; // diálogo cancelado
-            }
-        }
-        $('liveBtn').classList.add('busy');
-        const ok = await Live.start(() => world);
-        $('liveBtn').classList.remove('busy');
+    /*
+     * Arranque automático tras cargar un mundo. Solo funciona si la carpeta se
+     * eligió con el diálogo del navegador o se soltó con handle; con el <input
+     * webkitdirectory> de repuesto no hay nada que releer y el indicador lo dice.
+     */
+    async function startLive() {
+        renderLive();
+        if (!Live.supported() || !Live.hasFolder()) return;
+        $('liveStatus').classList.add('busy');
+        const ok = await Live.autoStart(() => world);
+        $('liveStatus').classList.remove('busy');
         if (!ok) liveMsg = I18n.t('live.denied');
         renderLive();
-    });
+    }
 
     /* ---------- Controles ---------- */
 
@@ -664,9 +727,7 @@
         'spawnRadius',
         'simDist',
         'spawnManual',
-        'layerTerrain',
         'terrainMode',
-        'layerActivity',
         'layerLoaded',
         'layerMarkers',
         'layerGrid',
@@ -701,10 +762,12 @@
 
     $('png').addEventListener('click', () => {
         const a = document.createElement('a');
-        a.download = ((world.name || 'world') + '-' + currentDim.label + '-chunks.png').replace(
-            /[^\w.-]+/g,
-            '_',
-        );
+        a.download = (
+            (stripFormat(world.name || '') || 'world') +
+            '-' +
+            currentDim.label +
+            '-chunks.png'
+        ).replace(/[^\w.-]+/g, '_');
         a.href = $('map').toDataURL('image/png');
         a.click();
     });
@@ -715,6 +778,7 @@
         world = null;
         currentDim = null;
         $('app').hidden = true;
+        $('hero').hidden = false;
         $('dirInput').value = '';
         window.scrollTo({ top: 0, behavior: 'smooth' });
     });
@@ -723,6 +787,97 @@
         return String(s).replace(
             /[&<>"']/g,
             (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c],
+        );
+    }
+
+    /* ---------- Códigos de formato de Minecraft (§) ---------- */
+
+    /* Paleta de Java Edition, tal cual la usa el juego al pintar texto. */
+    const MC_COLORS = {
+        0: '#000000',
+        1: '#0000aa',
+        2: '#00aa00',
+        3: '#00aaaa',
+        4: '#aa0000',
+        5: '#aa00aa',
+        6: '#ffaa00',
+        7: '#aaaaaa',
+        8: '#555555',
+        9: '#5555ff',
+        a: '#55ff55',
+        b: '#55ffff',
+        c: '#ff5555',
+        d: '#ff55ff',
+        e: '#ffff55',
+        f: '#ffffff',
+    };
+
+    /* Para nombres de archivo y cualquier sitio donde solo cabe texto plano. */
+    function stripFormat(s) {
+        return String(s).replace(/§./g, '');
+    }
+
+    /*
+     * Convierte un LevelName con códigos § en HTML. Se sigue la regla del juego:
+     * un código de color reinicia el resto del formato, §r lo reinicia todo y los
+     * códigos que no existen simplemente se comen.
+     */
+    function mcFormat(s) {
+        const txt = String(s);
+        const limpio = () => ({
+            color: null,
+            bold: false,
+            italic: false,
+            under: false,
+            strike: false,
+            obf: false,
+        });
+        let cur = limpio();
+        let buf = '';
+        let html = '';
+        const flush = () => {
+            if (buf) html += mcWrap(cur, escapeHtml(buf));
+            buf = '';
+        };
+        for (let i = 0; i < txt.length; i++) {
+            if (txt[i] === '§' && i + 1 < txt.length) {
+                const code = txt[++i].toLowerCase();
+                flush();
+                if (MC_COLORS[code]) {
+                    cur = limpio();
+                    cur.color = MC_COLORS[code];
+                } else if (code === 'l') cur.bold = true;
+                else if (code === 'o') cur.italic = true;
+                else if (code === 'n') cur.under = true;
+                else if (code === 'm') cur.strike = true;
+                else if (code === 'k') cur.obf = true;
+                else if (code === 'r') cur = limpio();
+                continue;
+            }
+            buf += txt[i];
+        }
+        flush();
+        return html;
+    }
+
+    function mcWrap(st, text) {
+        const css = [];
+        if (st.color) css.push('color:' + st.color);
+        if (st.bold) css.push('font-weight:700');
+        if (st.italic) css.push('font-style:italic');
+        const deco = [st.under ? 'underline' : '', st.strike ? 'line-through' : '']
+            .filter(Boolean)
+            .join(' ');
+        if (deco) css.push('text-decoration:' + deco);
+        if (!css.length && !st.obf) return text;
+        // §k (obfuscated) no se anima: basta con que se lea como texto ilegible.
+        return (
+            '<span' +
+            (st.obf ? ' class="mc-obf"' : '') +
+            (css.length ? ' style="' + css.join(';') + '"' : '') +
+            '>' +
+            text +
+            '</span>'
         );
     }
 

@@ -16,6 +16,7 @@
         queue: [],
         pending: new Set(), // "rx,rz|modo" en cola o en proceso
         tiles: new Map(), // "rx,rz|modo" -> ImageBitmap
+        painted: new Map(), // "rx,rz|modo" -> Uint8Array(1024), qué chunks pintaron de verdad
         dim: null,
         mode: 'blocks',
         available: null, // null = sin comprobar, false = sin workers
@@ -75,6 +76,7 @@
             const bmp = state.tiles.get(k);
             if (bmp && bmp.close) bmp.close();
             state.tiles.delete(k);
+            state.painted.delete(k);
         }
     }
 
@@ -86,6 +88,7 @@
                 const img = new ImageData(msg.pixels, TILE, TILE);
                 const bmp = await createImageBitmap(img);
                 state.tiles.set(k, bmp);
+                state.painted.set(k, msg.painted);
             } catch (_) {
                 /* región ilegible: se queda sin tesela */
             }
@@ -154,6 +157,7 @@
         resetQueue();
         for (const bmp of state.tiles.values()) if (bmp && bmp.close) bmp.close();
         state.tiles.clear();
+        state.painted.clear();
     }
 
     /* Bloques o biomas. Las teselas ya hechas de cada modo se conservan. */
@@ -236,7 +240,23 @@
             const bmp = state.tiles.get(k);
             if (bmp && bmp.close) bmp.close();
             state.tiles.delete(k);
+            state.painted.delete(k);
         }
+    }
+
+    /*
+     * ¿Este chunk tenía bloques de verdad la última vez que se leyó su región?
+     * true/false si ya se sabe, undefined si la región aún no se ha renderizado
+     * (entonces no se puede distinguir de uno realmente sin generar).
+     */
+    function chunkPainted(cx, cz) {
+        const rx = Math.floor(cx / 32),
+            rz = Math.floor(cz / 32);
+        const mask = state.painted.get(tileKey(rx, rz, state.mode));
+        if (!mask) return undefined;
+        const lx = ((cx % 32) + 32) % 32,
+            lz = ((cz % 32) + 32) % 32;
+        return !!mask[lz * 32 + lx];
     }
 
     /* ¿Esta región está en la cola o pasando por un worker ahora mismo? */
@@ -265,6 +285,7 @@
         get,
         isLoading,
         invalidate,
+        chunkPainted,
         stats,
         isAvailable,
         lastError,

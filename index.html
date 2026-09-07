@@ -57,7 +57,7 @@
             <select id="langSelect" class="lang-select" data-i18n-aria="settings.language"></select>
         </div>
 
-        <header class="hero">
+        <header id="hero" class="hero">
             <div class="wrap">
                 <div class="badge" data-i18n="hero.badge"></div>
                 <h1 data-i18n="hero.title"></h1>
@@ -111,11 +111,6 @@
                     </section>
 
                     <section class="card">
-                        <h2 data-i18n="card.dimension"></h2>
-                        <select id="dimSelect"></select>
-                    </section>
-
-                    <section class="card">
                         <h2 data-i18n="card.sources"></h2>
                         <label class="chk"
                             ><input type="checkbox" id="srcSpawn" checked /><span
@@ -140,6 +135,7 @@
                             ></span>
                             <span data-i18n="src.players"></span
                         ></label>
+                        <p class="note" id="playersNote" hidden></p>
                         <label class="range">
                             <span data-i18n="ctl.simDist"></span> <output id="simDistOut"></output>
                             <input type="range" id="simDist" min="2" max="32" step="1" value="10" />
@@ -156,19 +152,12 @@
 
                     <section class="card">
                         <h2 data-i18n="card.layers"></h2>
-                        <label class="chk"
-                            ><input type="checkbox" id="layerTerrain" checked />
-                            <span data-i18n="layer.terrain"></span
-                        ></label>
+                        <select id="dimSelect"></select>
                         <select id="terrainMode" class="mode-select">
                             <option value="blocks" data-i18n="mode.blocks"></option>
                             <option value="biomes" data-i18n="mode.biomes"></option>
                         </select>
                         <p class="note" id="terrainNote" hidden></p>
-                        <label class="chk"
-                            ><input type="checkbox" id="layerActivity" />
-                            <span data-i18n="layer.activity"></span
-                        ></label>
                         <label class="chk"
                             ><input type="checkbox" id="layerLoaded" checked />
                             <span data-i18n="layer.loaded"></span
@@ -183,10 +172,13 @@
                         ></label>
                     </section>
 
-                    <section class="card">
-                        <h2 data-i18n="card.summary"></h2>
+                    <details class="card fold" id="summaryCard">
+                        <summary>
+                            <h2 data-i18n="card.summary"></h2>
+                            <span class="caret" aria-hidden="true"></span>
+                        </summary>
                         <dl id="statsInfo"></dl>
-                    </section>
+                    </details>
 
                     <section class="card" id="warnCard" hidden>
                         <h2 data-i18n="card.warnings"></h2>
@@ -235,15 +227,15 @@
                         </div>
 
                         <div class="tb-center">
-                            <button
-                                id="liveBtn"
-                                class="btn live"
-                                type="button"
-                                aria-pressed="false"
-                            >
+                            <!--
+                                No es un botón: el seguimiento arranca solo en
+                                cuanto hay una carpeta que se pueda releer. Esto
+                                solo informa, y por eso es un aria-live.
+                            -->
+                            <div id="liveStatus" class="live-status" role="status" aria-live="polite">
                                 <span class="live-dot" aria-hidden="true"></span>
                                 <span id="liveLabel"></span>
-                            </button>
+                            </div>
                             <p class="live-note" id="liveNote"></p>
                         </div>
 
@@ -261,6 +253,10 @@
                                 <span
                                     ><i class="sw terrain"></i
                                     ><span data-i18n="legend.terrain"></span
+                                ></span>
+                                <span
+                                    ><i class="sw wborder"></i
+                                    ><span data-i18n="legend.border"></span
                                 ></span>
                             </span>
                         </div>

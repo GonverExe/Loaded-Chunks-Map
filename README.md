@@ -60,6 +60,7 @@ dropping folders, a recent Chromium-based browser or Firefox.
 | ------------------------------------ | -------------------------------------------------------------------------------- |
 | Name, version, spawn, gamerules      | `level.dat` (NBT + gzip)                                                         |
 | Player in a singleplayer world       | `level.dat` → `Data.Player.Pos`                                                  |
+| World border                         | `level.dat` → `Data.BorderCenterX/Z`, `Data.BorderSize`                          |
 | Players on a server                  | `playerdata/<uuid>.dat` → `Pos`, `Dimension`                                     |
 | Chunks pinned with `/forceload`      | `<dim>/data/chunks.dat` → `data.Forced` (LongArray of packed `ChunkPos`)         |
 | Generated chunks and their last save | header of `<dim>/region/r.X.Z.mca` (4 KiB of locations + 4 KiB of timestamps)    |
@@ -176,6 +177,7 @@ arrastrar carpetas, un navegador basado en Chromium o Firefox reciente.
 | ------------------------------------- | ----------------------------------------------------------------------------------- |
 | Nombre, versión, spawn, gamerules     | `level.dat` (NBT + gzip)                                                            |
 | Jugador en partida de un jugador      | `level.dat` → `Data.Player.Pos`                                                     |
+| World border                          | `level.dat` → `Data.BorderCenterX/Z`, `Data.BorderSize`                             |
 | Jugadores en servidor                 | `playerdata/<uuid>.dat` → `Pos`, `Dimension`                                        |
 | Chunks fijados con `/forceload`       | `<dim>/data/chunks.dat` → `data.Forced` (LongArray de `ChunkPos` empaquetados)      |
 | Chunks generados y su último guardado | cabecera de `<dim>/region/r.X.Z.mca` (4 KiB de posiciones + 4 KiB de timestamps)    |
@@ -291,6 +293,7 @@ arrastar pastas, um navegador baseado em Chromium ou um Firefox recente.
 | ------------------------------- | ------------------------------------------------------------------------------- |
 | Nome, versão, spawn, gamerules  | `level.dat` (NBT + gzip)                                                        |
 | Jogador em mundo de um jogador  | `level.dat` → `Data.Player.Pos`                                                 |
+| World border                    | `level.dat` → `Data.BorderCenterX/Z`, `Data.BorderSize`                         |
 | Jogadores em servidor           | `playerdata/<uuid>.dat` → `Pos`, `Dimension`                                    |
 | Chunks fixados com `/forceload` | `<dim>/data/chunks.dat` → `data.Forced` (LongArray de `ChunkPos` empacotados)   |
 | Chunks gerados e o último save  | cabeçalho de `<dim>/region/r.X.Z.mca` (4 KiB de posições + 4 KiB de timestamps) |
@@ -401,6 +404,7 @@ python3 -m http.server 8080   # 然后打开 http://localhost:8080
 | ---------------------------- | ------------------------------------------------------------------------ |
 | 名称、版本、出生点、游戏规则 | `level.dat`（NBT + gzip）                                                |
 | 单人世界的玩家               | `level.dat` → `Data.Player.Pos`                                          |
+| 世界边界                     | `level.dat` → `Data.BorderCenterX/Z`、`Data.BorderSize`                  |
 | 服务器上的玩家               | `playerdata/<uuid>.dat` → `Pos`、`Dimension`                             |
 | 用 `/forceload` 固定的区块   | `<dim>/data/chunks.dat` → `data.Forced`（打包后的 `ChunkPos` LongArray） |
 | 已生成的区块及上次保存时间   | `<dim>/region/r.X.Z.mca` 的文件头（4 KiB 位置表 + 4 KiB 时间戳）         |
@@ -511,6 +515,7 @@ python3 -m http.server 8080   # и откройте http://localhost:8080
 | ---------------------------------------- | -------------------------------------------------------------------------- |
 | Название, версия, спавн, игровые правила | `level.dat` (NBT + gzip)                                                   |
 | Игрок в одиночном мире                   | `level.dat` → `Data.Player.Pos`                                            |
+| Граница мира                             | `level.dat` → `Data.BorderCenterX/Z`, `Data.BorderSize`                    |
 | Игроки на сервере                        | `playerdata/<uuid>.dat` → `Pos`, `Dimension`                               |
 | Чанки, закреплённые через `/forceload`   | `<dim>/data/chunks.dat` → `data.Forced` (LongArray упакованных `ChunkPos`) |
 | Сгенерированные чанки и время сохранения | заголовок `<dim>/region/r.X.Z.mca` (4 KiB позиций + 4 KiB меток времени)   |

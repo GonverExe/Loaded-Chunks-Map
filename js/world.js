@@ -92,6 +92,24 @@
         }
     }
 
+    /*
+     * World border del level.dat. Es un cuadrado centrado en BorderCenterX/Z con
+     * BorderSize bloques de lado, el mismo para todas las dimensiones (Java no lo
+     * divide entre 8 en el Nether). Sin la etiqueta se aplica el valor de fábrica,
+     * 60 000 000 de lado, que es lo que usa el juego cuando nadie lo ha tocado.
+     */
+    const BORDER_DEFAULT = 60000000;
+
+    function borderFromNBT(d) {
+        const size = d.BorderSize != null ? Number(d.BorderSize) : BORDER_DEFAULT;
+        if (!isFinite(size) || size <= 0) return null;
+        return {
+            x: Number(d.BorderCenterX || 0),
+            z: Number(d.BorderCenterZ || 0),
+            size: size,
+        };
+    }
+
     function playerFromNBT(data, name, source) {
         const pos = data.Pos;
         if (!pos || pos.length < 3) return null;
@@ -119,33 +137,53 @@
     }
 
     /*
-     * Reparte los jugadores por dimensión resolviendo el duplicado del mundo de
-     * un jugador.
+     * Margen para considerar que dos playerdata son de la misma tanda de
+     * guardado. El juego solo reescribe el archivo de quien está conectado, y el
+     * autoguardado va cada 5 minutos, así que con 10 sobra: lo que quede fuera es
+     * alguien que no estaba en el mundo la última vez que se guardó.
+     */
+    const SAVE_WINDOW = 10 * 60 * 1000;
+
+    /*
+     * Decide qué jugadores cuentan y los reparte por dimensión. Hay dos formas de
+     * que aparezca un jugador de más, y las dos se resuelven aquí:
      *
-     * La misma persona aparece dos veces: en el Player de level.dat y en su
-     * playerdata/<uuid>.dat. Antes se quitaba el duplicado comparando la
-     * posición, pero los dos archivos no se escriben siempre en el mismo
-     * instante: en cuanto divergían salían dos marcadores del mismo jugador, uno
-     * de ellos con la posición vieja.
+     * 1. El mismo humano está en el Player de level.dat y en su
+     *    playerdata/<uuid>.dat. Los dos archivos no se escriben siempre en el
+     *    mismo instante, así que comparar posiciones no vale: manda la fecha.
      *
-     * Ahora manda la fecha del archivo, que es un dato y no una suposición sobre
-     * cuál de los dos escribe antes el juego.
+     * 2. La carpeta playerdata/ guarda a todo el que haya pisado el mundo alguna
+     *    vez, aunque fuera con otra cuenta hace meses. Esa gente no está dentro y
+     *    no mantiene ningún chunk cargado, pero salía como un marcador más,
+     *    clavado donde se desconectó. Se quedan solo los guardados a la vez que
+     *    el más reciente.
      *
      * "level" es { player, mtime } o null; "data", la lista de { player, mtime }
-     * salida de playerdata/.
+     * salida de playerdata/. Deja en world.stalePlayers cuántos se han ignorado,
+     * para que la interfaz pueda decirlo en vez de hacerlos desaparecer sin más.
      */
     function assignPlayers(world, level, data) {
         let elegidos;
+        let ignorados = 0;
+
         if (!data.length) {
             // Mundo antiguo o sin playerdata: solo queda el de level.dat.
             elegidos = level ? [level.player] : [];
-        } else if (data.length > 1 || !level) {
-            // Servidor: el anfitrión, si lo hay, ya está entre los playerdata.
-            elegidos = data.map((d) => d.player);
         } else {
-            // Un jugador: gana la copia guardada más recientemente.
-            elegidos = [data[0].mtime >= level.mtime ? data[0].player : level.player];
+            const ultimo = data.reduce((m, d) => Math.max(m, d.mtime), 0);
+            const dentro = data.filter((d) => ultimo - d.mtime <= SAVE_WINDOW);
+            ignorados = data.length - dentro.length;
+
+            if (dentro.length > 1 || !level) {
+                // Varios de verdad: el anfitrión, si lo hay, ya está entre ellos.
+                elegidos = dentro.map((d) => d.player);
+            } else {
+                // Uno solo: gana la copia guardada más recientemente.
+                elegidos = [dentro[0].mtime >= level.mtime ? dentro[0].player : level.player];
+            }
         }
+
+        world.stalePlayers = ignorados;
         for (const dim of world.dimensions.values()) dim.players = [];
         for (const pl of elegidos) getDim(world, pl.dimension).players.push(pl);
     }
@@ -158,6 +196,8 @@
             dataVersion: null,
             spawn: null,
             spawnChunkRadius: null, // gamerule leída del level.dat, si existe
+            border: null, // world border del level.dat, en bloques
+            stalePlayers: 0, // playerdata de gente que no estaba en el último guardado
             lastPlayed: null,
             warnings: [],
             dimensions: new Map(),
@@ -220,6 +260,7 @@
                     const r = parseInt(rules.spawnChunkRadius, 10);
                     if (!isNaN(r)) world.spawnChunkRadius = r;
                 }
+                world.border = borderFromNBT(d);
                 if (d.Player) {
                     const pl = playerFromNBT(d.Player, null, 'level.dat');
                     if (pl) levelPlayer = { player: pl, mtime: levelDat.lastModified || 0 };
@@ -336,6 +377,10 @@
         };
         world.warnings = [];
 
+        // Foto de los jugadores antes de tocar nada: assignPlayers() rehace las
+        // listas enteras, así que hay que capturarla aquí y no más abajo.
+        const playersBefore = playerSignature(world);
+
         // 1. level.dat: versión, gamerules y spawn. Si el jugador ha vuelto a
         // entrar con otra versión, el radio de spawn chunks sale de aquí.
         let levelPlayer = null;
@@ -365,6 +410,7 @@
                     const r = parseInt(rules.spawnChunkRadius, 10);
                     if (!isNaN(r)) world.spawnChunkRadius = r;
                 }
+                world.border = borderFromNBT(d);
                 if (d.Player) {
                     const pl = playerFromNBT(d.Player, null, 'level.dat');
                     if (pl) levelPlayer = { player: pl, mtime: sets.level.lastModified || 0 };

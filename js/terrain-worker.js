@@ -414,6 +414,10 @@ async function renderRegion(buffer, mode, biomeY) {
     const view = new DataView(buffer);
     const pixels = new Uint8ClampedArray(SIZE * SIZE * 4);
     const heights = new Int16Array(SIZE * SIZE);
+    // Un byte por posición de la región: 1 si el chunk tenía bloques que pintar.
+    // La cabecera del .mca solo dice que hay *algo* guardado ahí; esto es lo que
+    // distingue un chunk con terreno real de uno a medio generar (sin sections).
+    const painted = new Uint8Array(1024);
     let chunks = 0,
         failed = 0,
         unsupported = 0,
@@ -478,7 +482,10 @@ async function renderRegion(buffer, mode, biomeY) {
                     mode === 'biomes'
                         ? renderChunkBiomes(chunk, pixels, px0, pz0, biomeY)
                         : renderChunk(chunk, pixels, heights, px0, pz0);
-                if (ok) chunks++;
+                if (ok) {
+                    chunks++;
+                    painted[i] = 1;
+                }
             } catch (err) {
                 failed++;
                 if (!firstError) firstError = err.message;
@@ -487,7 +494,7 @@ async function renderRegion(buffer, mode, biomeY) {
     }
 
     if (mode !== 'biomes') shade(pixels, heights); // el mapa de biomas va plano
-    return { pixels, chunks, failed, unsupported, firstError };
+    return { pixels, painted, chunks, failed, unsupported, firstError };
 }
 
 self.onmessage = async (e) => {
@@ -507,13 +514,14 @@ self.onmessage = async (e) => {
                 mode: mode || 'blocks',
                 ok: true,
                 pixels: res.pixels,
+                painted: res.painted,
                 chunks: res.chunks,
                 failed: res.failed,
                 unsupported: res.unsupported,
                 firstError: res.firstError,
                 ms: Math.round(performance.now() - t0),
             },
-            [res.pixels.buffer],
+            [res.pixels.buffer, res.painted.buffer],
         );
     } catch (err) {
         self.postMessage({ id, rx, rz, mode: mode || 'blocks', ok: false, error: err.message });

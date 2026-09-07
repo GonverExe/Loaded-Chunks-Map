@@ -11,11 +11,28 @@
  * Aviso importante que la interfaz repite: el juego no vuelca a disco al
  * momento. Escribe en el autoguardado (unos 5 minutos) y al salir del mundo, así
  * que entre volcado y volcado no hay nada nuevo que leer por mucho que se mire.
+ *
+ * De ese mismo hecho sale la detección de "mundo abierto": no hay forma desde el
+ * navegador de preguntar si Minecraft está corriendo, pero sí de mirar cuándo se
+ * escribió por última vez algo en la carpeta. Si la escritura más reciente es de
+ * hace menos de lo que tarda un autoguardado, el juego está dentro.
  */
 (function (global) {
     'use strict';
 
-    const INTERVAL = 15000;
+    const INTERVAL = 1000;
+
+    /*
+     * Ventana para dar el mundo por abierto. El autoguardado va cada 5 minutos,
+     * así que con algo de margen: si en los últimos 7 no se ha escrito nada, el
+     * juego no está dentro.
+     *
+     * El precio de este método es un rabo de unos minutos al cerrar el mundo:
+     * la salida escribe todo de golpe, así que se sigue viendo "abierto" hasta
+     * que esa escritura envejece. Por eso la interfaz enseña también cuándo fue
+     * la última escritura, que es el dato de verdad.
+     */
+    const OPEN_WINDOW = 7 * 60 * 1000;
 
     const state = {
         dir: null, // FileSystemDirectoryHandle de la carpeta del mundo
@@ -24,6 +41,8 @@
         running: false,
         busy: false,
         secondsLeft: 0,
+        lastWrite: 0, // mtime del archivo más reciente de la carpeta
+        seen: false, // ya se ha mirado la carpeta al menos una vez
         onTick: null, // (segundosRestantes) -> void
         onUpdate: null, // (resumen) -> void
         onError: null, // (claveI18n) -> void
@@ -79,6 +98,8 @@
     function forget() {
         stop();
         state.dir = null;
+        state.lastWrite = 0;
+        state.seen = false;
     }
 
     /* El permiso de lectura puede caducar entre sesiones; se vuelve a pedir. */
@@ -109,6 +130,10 @@
                 const interesa =
                     lower === 'level.dat' ||
                     lower === 'chunks.dat' ||
+                    // Minecraft lo reescribe justo al abrir el mundo: es la señal
+                    // más limpia de que alguien acaba de entrar. WorldReader lo
+                    // ignora; aquí solo interesa su fecha.
+                    lower === 'session.lock' ||
                     /^r\.-?\d+\.-?\d+\.mca$/.test(lower) ||
                     /^[0-9a-f]{8}-[0-9a-f-]+\.dat$/.test(lower);
                 if (!interesa) continue;
@@ -138,6 +163,14 @@
         try {
             const files = await listFiles();
             if (!files.length) return null;
+
+            // Escritura más reciente de toda la carpeta: de aquí sale el estado
+            // abierto/cerrado sin tener que comparar contra la pasada anterior.
+            let newest = 0;
+            for (const f of files) if (f.lastModified > newest) newest = f.lastModified;
+            if (newest > state.lastWrite) state.lastWrite = newest;
+            state.seen = true;
+
             const res = await WorldReader.refresh(files, world);
             if (state.onUpdate) state.onUpdate(res);
             return res;
@@ -172,10 +205,36 @@
         }, INTERVAL);
 
         // Una primera pasada inmediata: si el mundo ya estaba abierto, lo que se
-        // ve pasa a estar al día sin esperar los quince segundos.
+        // ve pasa a estar al día sin esperar al primer ciclo.
         await checkNow(getWorld());
         if (state.onTick) state.onTick(state.secondsLeft);
         return true;
+    }
+
+    /* 'open' | 'closed' | 'unknown' (todavía sin mirar la carpeta). */
+    function openState() {
+        if (!state.seen || !state.lastWrite) return 'unknown';
+        return Date.now() - state.lastWrite < OPEN_WINDOW ? 'open' : 'closed';
+    }
+
+    /* Momento de la última escritura vista en la carpeta, o 0. */
+    function lastWrite() {
+        return state.lastWrite;
+    }
+
+    /*
+     * Arranque automático, sin botón. Solo se intenta si ya hay permiso
+     * concedido: pedirlo exige un gesto del usuario, y aquí no lo hay. En la
+     * práctica siempre lo hay, porque el handle viene del diálogo de elegir
+     * carpeta o de soltarla, que ya son gestos.
+     */
+    async function autoStart(getWorld) {
+        if (state.running) return true;
+        if (!state.dir) return false;
+        if (state.dir.queryPermission) {
+            if ((await state.dir.queryPermission({ mode: 'read' })) !== 'granted') return false;
+        }
+        return await start(getWorld);
     }
 
     function stop() {
@@ -198,7 +257,10 @@
         listFiles,
         checkNow,
         start,
+        autoStart,
         stop,
+        openState,
+        lastWrite,
         set onTick(fn) {
             state.onTick = fn;
         },

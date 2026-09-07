@@ -38,6 +38,8 @@
     --map-recent-rgb: 245, 158, 11;
     /* Aro de "región en camino" */
     --map-load-mark: rgba(125, 211, 252, 0.85);
+    /* World border: el azul del muro que dibuja el juego. */
+    --map-worldborder: #38a3ff;
 }
 
 :root[data-theme='light'] {
@@ -76,6 +78,7 @@
     --map-empty: rgba(15, 30, 55, 0.35);
     --map-recent-rgb: 217, 119, 6;
     --map-load-mark: rgba(2, 132, 199, 0.8);
+    --map-worldborder: #1d6fe0;
 }
 
 * {
@@ -157,14 +160,14 @@ code {
 }
 .lang-select {
     width: auto;
-    border: 0;
-    border-radius: 999px;
-    background: transparent;
+    background: var(--bg-soft);
     color: var(--text);
+    border: 1px solid var(--line);
+    border-radius: 8px;
     font:
         500 13px/1 system-ui,
         sans-serif;
-    padding: 8px 6px;
+    padding: 7px 8px;
     cursor: pointer;
 }
 .lang-select:hover {
@@ -312,8 +315,6 @@ code {
     display: flex;
     flex-direction: column;
     gap: 14px;
-    max-height: calc(100vh - 36px);
-    overflow: auto;
 }
 .card {
     background: var(--card);
@@ -328,6 +329,29 @@ code {
     text-transform: uppercase;
     letter-spacing: 0.08em;
     color: var(--muted);
+}
+
+/* Tarjeta plegable: el título hace de tirador y el cuerpo solo ocupa sitio si se abre. */
+.card.fold > summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    cursor: pointer;
+    list-style: none;
+    color: var(--muted);
+}
+.card.fold > summary::-webkit-details-marker {
+    display: none;
+}
+.card.fold > summary h2 {
+    margin: 0;
+}
+.card.fold[open] > summary {
+    margin-bottom: 10px;
+}
+.card.fold[open] > summary .caret {
+    transform: rotate(180deg);
 }
 .card dl {
     display: grid;
@@ -345,6 +369,26 @@ code {
     font-variant-numeric: tabular-nums;
 }
 
+/*
+ * Texto con códigos § del juego. El color lo pone cada <span> con la paleta de
+ * Minecraft; aquí solo va la sombra, que además de imitar la del juego evita
+ * que el negro (§0) o el blanco (§f) se pierdan contra el fondo del tema.
+ */
+.mc {
+    text-shadow:
+        0 1px 0 rgba(0, 0, 0, 0.6),
+        0 0 3px rgba(255, 255, 255, 0.18);
+}
+:root[data-theme='light'] .mc {
+    text-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.8),
+        0 0 3px rgba(0, 0, 0, 0.35);
+}
+/* §k: en el juego son caracteres cambiando; aquí basta con que no se lea. */
+.mc-obf {
+    filter: blur(2.2px);
+}
+
 select,
 .chk,
 .range {
@@ -357,6 +401,23 @@ select {
     border: 1px solid var(--line);
     border-radius: 8px;
     padding: 7px 9px;
+    /* Sin esto el desplegable nativo (la lista de opciones) ignora el tema
+       de la página y el navegador la pinta con sus colores por defecto. */
+    color-scheme: dark;
+}
+:root[data-theme='light'] select {
+    color-scheme: light;
+}
+/* Las opciones sí se pueden colorear: así la lista desplegada usa el mismo
+   fondo y texto que el resto de la interfaz, no el gris/blanco del sistema. */
+select option {
+    background: var(--bg-soft);
+    color: var(--text);
+}
+/* Selector de dimensión, arriba de la tarjeta Capas: separado de la primera capa. */
+#dimSelect {
+    width: 100%;
+    margin-bottom: 10px;
 }
 select.small {
     padding: 4px 8px;
@@ -420,20 +481,27 @@ select.small {
 .sw.terrain {
     background: linear-gradient(135deg, #7fb238 55%, #4040ff);
 }
+/* El world border es una línea en el mapa, así que su muestra también lo es. */
+.sw.wborder {
+    background: var(--map-worldborder);
+    height: 3px;
+    width: 12px;
+    border-radius: 2px;
+}
 .mode-select {
     margin: 2px 0 8px;
     padding: 5px 8px;
     font-size: 13px;
 }
 /*
- * Avisos de progreso, abajo a la izquierda del mapa. Van apilados sobre la
- * barra de escala, que el canvas dibuja en esa misma esquina (a unos 30 px del
- * borde inferior), y no capturan el ratón para no estorbar al arrastre.
+ * Avisos de progreso, arriba a la izquierda del mapa, para no tapar la barra
+ * de escala que el canvas dibuja abajo a la izquierda. No capturan el ratón
+ * para no estorbar al arrastre.
  */
 .map-status {
     position: absolute;
     left: 12px;
-    bottom: 36px;
+    top: 12px;
     z-index: 5;
     display: flex;
     flex-direction: column;
@@ -601,40 +669,37 @@ select.small {
     vertical-align: baseline;
 }
 
-/* ---------- Botón de seguimiento en vivo ---------- */
+/* ---------- Indicador de seguimiento en vivo ---------- */
 /*
- * Borde distinto al de los demás botones a propósito: discontinuo y de dos
- * píxeles cuando está parado, macizo y encendido cuando está siguiendo el mundo.
+ * No se pulsa: dice si el mundo está abierto y cuánto falta para la siguiente
+ * comprobación. El borde cambia con el estado — apagado mientras no se sabe,
+ * encendido y con el punto latiendo cuando hay un mundo abierto.
  */
-.btn.live {
+.live-status {
     display: inline-flex;
     align-items: center;
     gap: 8px;
     padding: 7px 16px;
     font-size: 13px;
     font-weight: 600;
-    border: 2px dashed var(--accent);
+    border: 2px dashed var(--line);
     border-radius: 999px;
     background: transparent;
-    color: var(--accent);
-    white-space: nowrap;
-}
-.btn.live:hover:not(:disabled) {
-    background: var(--drop-over);
-}
-.btn.live:disabled {
-    border-color: var(--line);
     color: var(--muted);
-    cursor: not-allowed;
+    white-space: nowrap;
+    user-select: none;
 }
-.btn.live.on {
+.live-status.open {
     border-style: solid;
     border-color: var(--spawn);
     color: var(--spawn);
-    background: transparent;
+}
+.live-status.closed {
+    border-style: solid;
+    border-color: var(--line);
+    color: var(--muted);
 }
 
-/* El punto solo late mientras el seguimiento está activo. */
 .live-dot {
     width: 8px;
     height: 8px;
@@ -643,7 +708,8 @@ select.small {
     background: currentColor;
     opacity: 0.45;
 }
-.btn.live.on .live-dot {
+/* El punto solo late con el mundo abierto: es la señal de que hay algo vivo. */
+.live-status.open .live-dot {
     opacity: 1;
     animation: livePulse 1.6s ease-in-out infinite;
 }
@@ -659,7 +725,7 @@ select.small {
     }
 }
 /* Mientras se relee la carpeta el borde parpadea, para que se note la pasada. */
-.btn.live.busy {
+.live-status.busy {
     animation: liveBusy 0.9s ease-in-out infinite;
 }
 @keyframes liveBusy {
@@ -682,8 +748,8 @@ select.small {
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .btn.live.on .live-dot,
-    .btn.live.busy {
+    .live-status.open .live-dot,
+    .live-status.busy {
         animation: none;
     }
 }
@@ -693,6 +759,15 @@ select.small {
     display: flex;
     flex-direction: column;
     gap: 10px;
+    /* El panel ya no tiene scroll propio: la página entera baja, así que el
+     * mapa se queda pegado arriba mientras se recorre la barra lateral. */
+    position: sticky;
+    top: 18px;
+}
+@media (max-width: 900px) {
+    .map-wrap {
+        position: static;
+    }
 }
 /* El hueco de la derecha deja libre la barra flotante de ajustes. */
 /*
@@ -716,6 +791,8 @@ select.small {
 }
 .tb-right {
     justify-content: flex-end;
+    /* Sitio de más para que la leyenda no quede debajo del tema/idioma. */
+    margin-right: 15px;
 }
 .tb-center {
     display: flex;

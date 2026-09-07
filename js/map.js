@@ -4,6 +4,20 @@
 
     const LEVEL_ALPHA = [0.95, 0.6, 0.28];
 
+    /*
+     * Zoom, en píxeles por chunk. El tope de alejamiento no es fijo: se calcula
+     * para que quepa el world border del mundo (ver minScale), y 0.15 es solo el
+     * suelo de siempre, el que se usa cuando no se sabe dónde está el border.
+     */
+    const MAX_SCALE = 48;
+    const MIN_SCALE_FLOOR = 0.15;
+    /*
+     * Por debajo de esto una región no llega a 5 px: ni se pediría terreno ni se
+     * escanearían estructuras que no se van a distinguir, y con el mundo entero a
+     * la vista serían miles de archivos. Lo ya renderizado se sigue pintando.
+     */
+    const MIN_SCALE_TILES = 0.15;
+
     /* El tooltip se arma con innerHTML: los nombres pasan por aquí antes. */
     function escapeHtml(v) {
         return String(v).replace(
@@ -18,7 +32,7 @@
     function readColors() {
         const cs = getComputedStyle(document.documentElement);
         const v = (name, fallback) => cs.getPropertyValue(name).trim() || fallback;
-        return {
+        const c = {
             bg: v('--map-bg', '#0b0f17'),
             generated: v('--map-gen', '#1c2433'),
             grid: v('--map-grid', 'rgba(255,255,255,0.05)'),
@@ -30,11 +44,26 @@
             hover: v('--map-hover', '#ffffff'),
             empty: v('--map-empty', 'rgba(255,255,255,0.25)'),
             loadMark: v('--map-load-mark', 'rgba(125,211,252,0.85)'),
+            worldBorder: v('--map-worldborder', '#38a3ff'),
             recentRGB: v('--map-recent-rgb', '245, 158, 11'),
             spawn: v('--spawn', '#4ade80'),
             player: v('--player', '#60a5fa'),
             forceload: v('--force', '#c084fc'),
+            tickBlock: v('--warn', '#fbbf24'),
+            tickBorder: v('--muted', '#93a3bd'),
         };
+        /*
+         * Un color por anillo de ticket, los mismos que usa la etiqueta del
+         * tooltip: el núcleo se queda con el color de su fuente (spawn verde,
+         * jugador azul, forceload morado) y los dos anillos de fuera van con el
+         * ámbar del block ticking y el gris del borde sin tick.
+         */
+        c.levels = {
+            spawn: [c.spawn, c.tickBlock, c.tickBorder],
+            player: [c.player, c.tickBlock, c.tickBorder],
+            forceload: [c.forceload, c.tickBlock, c.tickBorder],
+        };
+        return c;
     }
 
     function ChunkMap(canvas, tooltip) {
@@ -54,6 +83,9 @@
             activity: false,
             loaded: true,
             markers: true,
+            // Aparte de "markers": con el mundo cerrado no hay nadie dentro, así
+            // que la chincheta del jugador se apaga aunque los marcadores sigan.
+            players: true,
             grid: true,
         };
         this.hover = null;
@@ -105,7 +137,7 @@
                     my = e.clientY - rect.top;
                 const before = this.screenToChunk(mx, my);
                 const factor = e.deltaY < 0 ? 1.15 : 1 / 1.15;
-                this.scale = Math.max(0.15, Math.min(48, this.scale * factor));
+                this.scale = this.clampScale(this.scale * factor);
                 const after = this.screenToChunk(mx, my);
                 this.camX += before.x - after.x;
                 this.camZ += before.z - after.z;
@@ -143,7 +175,7 @@
                         e.touches[0].clientX - e.touches[1].clientX,
                         e.touches[0].clientY - e.touches[1].clientY,
                     );
-                    this.scale = Math.max(0.15, Math.min(48, this.scale * (d / touchDist)));
+                    this.scale = this.clampScale(this.scale * (d / touchDist));
                     touchDist = d;
                 }
                 this.draw();
@@ -194,6 +226,23 @@
         this.draw();
     };
 
+    /*
+     * Hasta dónde se puede alejar la vista: lo justo para ver el world border
+     * entero con un poco de aire. Nunca se queda por encima del suelo de siempre,
+     * así que un border pequeño no impide alejarse, solo lo permite más.
+     */
+    ChunkMap.prototype.minScale = function () {
+        const b = this.world && this.world.border;
+        if (!b || !this.w || !this.h) return MIN_SCALE_FLOOR;
+        const chunks = b.size / 16 + 8; // el lado del border, más un margen
+        const cabe = Math.min(this.w, this.h) / chunks;
+        return Math.min(MIN_SCALE_FLOOR, Math.max(cabe, 1e-6));
+    };
+
+    ChunkMap.prototype.clampScale = function (s) {
+        return Math.max(this.minScale(), Math.min(MAX_SCALE, s));
+    };
+
     ChunkMap.prototype.fit = function () {
         const boxes = [];
         if (this.dim) {
@@ -221,7 +270,7 @@
         this.camZ = (minZ + maxZ + 1) / 2;
         const sx = this.w / (maxX - minX + 4),
             sz = this.h / (maxZ - minZ + 4);
-        this.scale = Math.max(0.15, Math.min(48, Math.min(sx, sz)));
+        this.scale = this.clampScale(Math.min(sx, sz));
         this.draw();
     };
 
@@ -307,15 +356,23 @@
         }
 
         if (gen) {
-            lines.push(
-                '<span class="dim">' +
-                    (gen.mtime
-                        ? I18n.t('tip.generatedAt', {
-                              date: new Date(gen.mtime * 1000).toLocaleString(I18n.locale()),
-                          })
-                        : I18n.t('tip.generated')) +
-                    '</span>',
-            );
+            /*
+             * La cabecera del .mca solo dice que hay algo guardado ahí, no que el
+             * chunk llegara a generar bloques (un chunk a medio hacer también deja
+             * entrada). Si ya se ha leído la región y resulta que no pintó nada,
+             * se avisa de eso en vez de decir "generado" sin más.
+             */
+            const painted = global.Terrain ? Terrain.chunkPainted(cx, cz) : undefined;
+            const key =
+                painted === false
+                    ? gen.mtime
+                        ? 'tip.regionReadAt'
+                        : 'tip.regionRead'
+                    : gen.mtime
+                      ? 'tip.generatedAt'
+                      : 'tip.generated';
+            const date = gen.mtime ? new Date(gen.mtime * 1000).toLocaleString(I18n.locale()) : '';
+            lines.push('<span class="dim">' + I18n.t(key, { date: date }) + '</span>');
         } else {
             lines.push('<span class="dim">' + I18n.t('tip.ungenerated') + '</span>');
         }
@@ -388,10 +445,14 @@
             }
         }
 
-        // Terreno renderizado desde los region files.
-        const regions = this._visibleRegions(min, max);
+        // Terreno renderizado desde los region files. Con la vista muy alejada no
+        // se pide nada: a esa escala una región no se ve y serían miles de lecturas.
+        const lejos = s < MIN_SCALE_TILES;
+        const regions = lejos ? [] : this._visibleRegions(min, max);
         let terrainDrawn = false;
-        if (this.layers.terrain && global.Terrain) terrainDrawn = this._drawTerrain(regions);
+        if (this.layers.terrain && global.Terrain && !lejos) {
+            terrainDrawn = this._drawTerrain(regions);
+        }
 
         // Chunks cargados. Sobre el terreno se pintan translúcidos para no taparlo,
         // y se remata el borde del área para que siga leyéndose de un vistazo.
@@ -401,7 +462,7 @@
                 if (!inView(c.x, c.z)) continue;
                 const p = this.chunkToScreen(c.x, c.z);
                 ctx.globalAlpha = LEVEL_ALPHA[c.level] * k;
-                ctx.fillStyle = C[ChunkModel.dominantSource(c)] || C.spawn;
+                ctx.fillStyle = this._levelColor(ChunkModel.dominantSource(c), c.level);
                 ctx.fillRect(p.x, p.y, px, px);
             }
             ctx.globalAlpha = 1;
@@ -415,8 +476,9 @@
             this._axes();
         }
 
+        this._worldBorder();
         if (this.layers.markers) this._markers();
-        this._drawStructures(min, max, regions);
+        if (!lejos) this._drawStructures(min, max, regions);
         if (this.hover) {
             const p = this.chunkToScreen(this.hover.x, this.hover.z);
             ctx.strokeStyle = C.hover;
@@ -434,40 +496,65 @@
         }
     };
 
-    /* Contorno del área cargada: solo las aristas que dan a un chunk no cargado. */
+    /* Color de un chunk según de dónde venga su ticket y en qué anillo esté. */
+    ChunkMap.prototype._levelColor = function (src, level) {
+        const niveles = this.colors.levels && this.colors.levels[src];
+        if (niveles) return niveles[level] || niveles[0];
+        return this.colors[src] || this.colors.spawn;
+    };
+
+    /*
+     * Contorno de cada anillo. Se agrupa por fuente y nivel, y de cada chunk se
+     * dibujan las aristas que dan a algo que no sea de su mismo grupo: así el
+     * entity ticking, el block ticking y el borde quedan cada uno perfilado con
+     * su propio tono, en vez de un único contorno alrededor de todo.
+     */
     ChunkMap.prototype._outlineLoaded = function (inView) {
         const ctx = this.ctx,
             s = this.scale;
-        const bySource = new Map();
+        /*
+         * Grupo de cada chunk cargado, calculado una sola vez. Incluye también los
+         * de fuera de la vista: si no, los vecinos que quedan justo al otro lado
+         * del borde de la pantalla parecerían de otro grupo y saldría un contorno
+         * de mentira pegado al marco.
+         */
+        const clave = new Map();
+        for (const [k, c] of this.loaded) {
+            clave.set(k, ChunkModel.dominantSource(c) + '|' + c.level);
+        }
+
+        const grupos = new Map(); // "fuente|nivel" -> { src, level, list }
         for (const c of this.loaded.values()) {
             if (!inView(c.x, c.z)) continue;
-            const src = ChunkModel.dominantSource(c);
-            let list = bySource.get(src);
-            if (!list) {
-                list = [];
-                bySource.set(src, list);
+            const k = clave.get(c.x + ',' + c.z);
+            let g = grupos.get(k);
+            if (!g) {
+                g = { src: ChunkModel.dominantSource(c), level: c.level, list: [] };
+                grupos.set(k, g);
             }
-            list.push(c);
+            g.list.push(c);
         }
+
+        const mismo = (x, z, k) => clave.get(x + ',' + z) === k;
         ctx.lineWidth = 1.5;
-        for (const [src, list] of bySource) {
-            ctx.strokeStyle = this.colors[src] || this.colors.spawn;
+        for (const [k, g] of grupos) {
+            ctx.strokeStyle = this._levelColor(g.src, g.level);
             ctx.beginPath();
-            for (const c of list) {
+            for (const c of g.list) {
                 const p = this.chunkToScreen(c.x, c.z);
-                if (!this.loaded.has(c.x + ',' + (c.z - 1))) {
+                if (!mismo(c.x, c.z - 1, k)) {
                     ctx.moveTo(p.x, p.y);
                     ctx.lineTo(p.x + s, p.y);
                 }
-                if (!this.loaded.has(c.x + ',' + (c.z + 1))) {
+                if (!mismo(c.x, c.z + 1, k)) {
                     ctx.moveTo(p.x, p.y + s);
                     ctx.lineTo(p.x + s, p.y + s);
                 }
-                if (!this.loaded.has(c.x - 1 + ',' + c.z)) {
+                if (!mismo(c.x - 1, c.z, k)) {
                     ctx.moveTo(p.x, p.y);
                     ctx.lineTo(p.x, p.y + s);
                 }
-                if (!this.loaded.has(c.x + 1 + ',' + c.z)) {
+                if (!mismo(c.x + 1, c.z, k)) {
                     ctx.moveTo(p.x + s, p.y);
                     ctx.lineTo(p.x + s, p.y + s);
                 }
@@ -490,10 +577,23 @@
         const cx = (min.x + max.x) / 64,
             cz = (min.z + max.z) / 64; // centro, en regiones
         const out = [];
-        for (let rz = rz0; rz <= rz1; rz++) {
-            for (let rx = rx0; rx <= rx1; rx++) {
-                if (!this.dim.regions.has(rx + ',' + rz)) continue;
+        // Con la vista muy alejada el rectángulo visible tiene más casillas que
+        // regiones hay en el mundo: entonces sale mucho más barato recorrer las
+        // que existen y quedarse con las que caen dentro.
+        if ((rx1 - rx0 + 1) * (rz1 - rz0 + 1) > this.dim.regions.size) {
+            for (const key of this.dim.regions.keys()) {
+                const coma = key.indexOf(',');
+                const rx = parseInt(key.slice(0, coma), 10),
+                    rz = parseInt(key.slice(coma + 1), 10);
+                if (rx < rx0 || rx > rx1 || rz < rz0 || rz > rz1) continue;
                 out.push({ rx, rz, d: (rx - cx) * (rx - cx) + (rz - cz) * (rz - cz) });
+            }
+        } else {
+            for (let rz = rz0; rz <= rz1; rz++) {
+                for (let rx = rx0; rx <= rx1; rx++) {
+                    if (!this.dim.regions.has(rx + ',' + rz)) continue;
+                    out.push({ rx, rz, d: (rx - cx) * (rx - cx) + (rz - cz) * (rz - cz) });
+                }
             }
         }
         out.sort((a, b) => a.d - b.d);
@@ -635,6 +735,50 @@
         ctx.stroke();
     };
 
+    /*
+     * World border: el cuadrado que el juego no deja cruzar. Se pintan las cuatro
+     * aristas por separado y solo las que caen dentro de la vista, recortadas a la
+     * pantalla: con el border por defecto (60 000 000 de lado) las coordenadas se
+     * van a miles de millones de píxeles y un strokeRect entero no vale.
+     */
+    ChunkMap.prototype._worldBorder = function () {
+        const b = this.world && this.world.border;
+        if (!b) return;
+        const half = b.size / 2;
+        const a = this.chunkToScreen((b.x - half) / 16, (b.z - half) / 16);
+        const c = this.chunkToScreen((b.x + half) / 16, (b.z + half) / 16);
+        const dentro = (v, max) => v >= -2 && v <= max + 2;
+        const fuera =
+            !dentro(a.x, this.w) &&
+            !dentro(c.x, this.w) &&
+            !dentro(a.y, this.h) &&
+            !dentro(c.y, this.h);
+        if (fuera) return;
+        const cx = (v) => Math.max(-2, Math.min(this.w + 2, v));
+        const cy = (v) => Math.max(-2, Math.min(this.h + 2, v));
+        const ctx = this.ctx;
+        ctx.strokeStyle = this.colors.worldBorder;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        if (dentro(a.x, this.w)) {
+            ctx.moveTo(a.x, cy(a.y));
+            ctx.lineTo(a.x, cy(c.y));
+        }
+        if (dentro(c.x, this.w)) {
+            ctx.moveTo(c.x, cy(a.y));
+            ctx.lineTo(c.x, cy(c.y));
+        }
+        if (dentro(a.y, this.h)) {
+            ctx.moveTo(cx(a.x), a.y);
+            ctx.lineTo(cx(c.x), a.y);
+        }
+        if (dentro(c.y, this.h)) {
+            ctx.moveTo(cx(a.x), c.y);
+            ctx.lineTo(cx(c.x), c.y);
+        }
+        ctx.stroke();
+    };
+
     ChunkMap.prototype._markers = function () {
         if (this.world && this.world.spawn && this.dim.id === 'minecraft:overworld') {
             const cx = Math.floor(this.world.spawn.x / 16),
@@ -642,9 +786,11 @@
             const p = this.chunkToScreen(cx + 0.5, cz + 0.5);
             this._pin(p.x, p.y, this.colors.spawn, I18n.t('legend.spawn'));
         }
-        for (const pl of this.dim.players) {
-            const p = this.chunkToScreen(pl.chunkX + 0.5, pl.chunkZ + 0.5);
-            this._pin(p.x, p.y, this.colors.player, WorldReader.playerLabel());
+        if (this.layers.players) {
+            for (const pl of this.dim.players) {
+                const p = this.chunkToScreen(pl.chunkX + 0.5, pl.chunkZ + 0.5);
+                this._pin(p.x, p.y, this.colors.player, WorldReader.playerLabel());
+            }
         }
     };
 
@@ -674,6 +820,8 @@
     ChunkMap.prototype._scaleBar = function () {
         const ctx = this.ctx;
         const targets = [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024];
+        // Con el world border a la vista hacen falta escalones muchísimo mayores.
+        for (let t = 2048; t <= 4194304; t *= 2) targets.push(t);
         let chunks = targets[targets.length - 1];
         for (const t of targets) {
             if (t * this.scale >= 60) {
