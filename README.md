@@ -61,6 +61,8 @@ dropping folders, a recent Chromium-based browser or Firefox.
 | Name, version, spawn, gamerules      | `level.dat` (NBT + gzip)                                                         |
 | Player in a singleplayer world       | `level.dat` → `Data.Player.Pos`                                                  |
 | World border                         | `level.dat` → `Data.BorderCenterX/Z`, `Data.BorderSize`                          |
+| Chunk loaders (portal)               | `<dim>/poi/r.X.Z.mca` + an entity on it in `<dim>/entities/r.X.Z.mca`            |
+| Chunk loaders (pearl)                | `<dim>/entities/r.X.Z.mca` → `minecraft:ender_pearl` (1.17+)                     |
 | Players on a server                  | `playerdata/<uuid>.dat` → `Pos`, `Dimension`                                     |
 | Chunks pinned with `/forceload`      | `<dim>/data/chunks.dat` → `data.Forced` (LongArray of packed `ChunkPos`)         |
 | Generated chunks and their last save | header of `<dim>/region/r.X.Z.mca` (4 KiB of locations + 4 KiB of timestamps)    |
@@ -85,8 +87,11 @@ page shows is a reconstruction of the _tickets_ that would exist when the world 
   spawn chunks were removed from the game. There is a manual override if you need it.
 - **Players**: simulation distance does not live in the world but in `server.properties` or the client
   options, so it is a UI control (10 by default).
-- **Chunk loaders** made with ender pearls, portals or mods: they depend on the running state and are
-  never written to disk, so they do not show up.
+- **Chunk loaders**: no ticket is ever written to disk, so they are inferred from the entity behind
+  them — an ender pearl saved mid-flight, or anything sitting on a Nether portal. That covers what
+  vanilla can actually load with; hoppers, redstone clocks and farms load nothing on their own, and
+  modded loaders depend on the running server and leave no trace. The radius is a UI control, like
+  simulation distance.
 
 The ticket model is the usual one: radius _r_ with _entity ticking_, one more ring with _block ticking_
 and one more ring loaded only (border).
@@ -94,20 +99,50 @@ and one more ring loaded only (border).
 ## Layout
 
 ```
-index.html        landing + UI
-css/styles.css
-js/i18n.js        strings in five languages + live switching
-js/theme.js       light / dark mode with a remembered preference
-js/blockcolors.js block -> colour palette for the terrain
-js/biomecolors.js biome -> colour palette for the biome map
-js/terrain.js     worker pool and tile cache
-js/terrain-worker.js  decodes a region file and paints its 512x512 tile
-js/nbt.js         NBT parser (gzip/zlib through DecompressionStream)
-js/world.js       reads the world folder and the .mca headers
-js/chunks.js      tickets → loaded chunks
-js/map.js         canvas render, pan/zoom, tooltip
-js/main.js        UI glue
+index.html                  the page itself
+css/
+  base.css                  palette, typography, controls
+  hero.css                  landing page and footer
+  panel.css                 sidebar
+  map.css                   map, toolbar, tooltip, legend
+js/
+  core/
+    i18n.js                 strings in five languages + live switching
+    theme.js                light / dark mode with a remembered preference
+  data/
+    nbt.js                  NBT parser (gzip/zlib through DecompressionStream)
+    world.js                reads the world folder and the .mca headers
+    chunks.js               tickets → loaded chunks
+    live.js                 watches the folder and re-reads what changed
+  render/
+    map.js                  canvas render, pan/zoom, tooltip
+    terrain.js              worker pool and tile cache
+    structures.js           structure scanning
+    structure-icons.js      one icon per structure family
+  workers/                  everything that runs off the main thread
+    terrain-worker.js       decodes a region file and paints its 512x512 tile
+    structures-worker.js    reads structure starts from a region file
+    nbt-lite.js             trimmed-down NBT reader for the workers
+    blockcolors.js          block -> colour palette
+    biomecolors.js          biome -> colour palette
+  ui/
+    app.js                  shared state and the repaint cycle
+    panel.js                sidebar rendering
+    structures-menu.js      structures dropdown
+    live-status.js          live-tracking badge
+    files.js                picking and dropping the folder
+    settings.js             theme and language
+    format.js               text helpers, including Minecraft § codes
+    main.js                 wiring and startup
+tools/                      checks that run without a browser
 ```
+
+The `js/workers/` folder is self-contained on purpose: what a worker
+`importScripts` sits right next to it, so moving files around never breaks it.
+
+Run `node tools/test.js` to check everything: the page boots, the save reader
+and the ticket model agree, the whole UI fills in with a fake world, and the
+tile queue never gets stuck. No dependencies to install.
 
 ---
 
@@ -178,6 +213,8 @@ arrastrar carpetas, un navegador basado en Chromium o Firefox reciente.
 | Nombre, versión, spawn, gamerules     | `level.dat` (NBT + gzip)                                                            |
 | Jugador en partida de un jugador      | `level.dat` → `Data.Player.Pos`                                                     |
 | World border                          | `level.dat` → `Data.BorderCenterX/Z`, `Data.BorderSize`                             |
+| Chunk loaders (portal)                | `<dim>/poi/r.X.Z.mca` + una entidad encima en `<dim>/entities/r.X.Z.mca`            |
+| Chunk loaders (perla)                 | `<dim>/entities/r.X.Z.mca` → `minecraft:ender_pearl` (1.17+)                        |
 | Jugadores en servidor                 | `playerdata/<uuid>.dat` → `Pos`, `Dimension`                                        |
 | Chunks fijados con `/forceload`       | `<dim>/data/chunks.dat` → `data.Forced` (LongArray de `ChunkPos` empaquetados)      |
 | Chunks generados y su último guardado | cabecera de `<dim>/region/r.X.Z.mca` (4 KiB de posiciones + 4 KiB de timestamps)    |
@@ -203,8 +240,11 @@ Lo que muestra la página es una reconstrucción de los _tickets_ que existiría
   ajuste manual por si hace falta.
 - **Jugadores**: la distancia de simulación no vive en el mundo sino en `server.properties` o en las
   opciones del cliente, así que es un control de la interfaz (por defecto 10).
-- **Chunk loaders** con perlas de ender, portales o mods: dependen del estado en ejecución y no quedan
-  escritos en disco, así que no aparecen.
+- **Chunk loaders**: el ticket no se escribe nunca en disco, así que se deducen de la entidad que los
+  provoca: una perla de ender guardada a medio vuelo, o cualquier cosa parada sobre un portal del
+  Nether. Con eso queda cubierto lo que vanilla puede cargar de verdad; los hoppers, los relojes de
+  redstone y las granjas no cargan nada por sí solos, y los loaders de mods dependen del servidor en
+  marcha y no dejan rastro. El radio es un control de la interfaz, como la distancia de simulación.
 
 El modelo de tickets es el habitual: radio _r_ con _entity ticking_, un anillo más con _block ticking_
 y otro anillo más solo cargado (borde).
@@ -212,20 +252,50 @@ y otro anillo más solo cargado (borde).
 ## Estructura
 
 ```
-index.html        landing + interfaz
-css/styles.css
-js/i18n.js        textos en los cinco idiomas + cambio en caliente
-js/theme.js       modo claro / oscuro con preferencia recordada
-js/blockcolors.js paleta bloque -> color para el terreno
-js/biomecolors.js paleta bioma -> color para el mapa de biomas
-js/terrain.js     pool de workers y caché de teselas
-js/terrain-worker.js  decodifica un region file y pinta su tesela de 512x512
-js/nbt.js         parser NBT (gzip/zlib vía DecompressionStream)
-js/world.js       lectura de la carpeta del mundo y de las cabeceras .mca
-js/chunks.js      cálculo de tickets → chunks cargados
-js/map.js         render en canvas, pan/zoom, tooltip
-js/main.js        interfaz
+index.html                  la página
+css/
+  base.css                  paleta, tipografía, controles
+  hero.css                  portada y pie
+  panel.css                 barra lateral
+  map.css                   mapa, barra de herramientas, tooltip, leyenda
+js/
+  core/
+    i18n.js                 textos en cinco idiomas + cambio en caliente
+    theme.js                modo claro / oscuro con preferencia recordada
+  data/
+    nbt.js                  lector de NBT (gzip/zlib con DecompressionStream)
+    world.js                lee la carpeta del mundo y las cabeceras .mca
+    chunks.js               tickets → chunks cargados
+    live.js                 vigila la carpeta y relee lo que cambia
+  render/
+    map.js                  pintado en canvas, pan/zoom, tooltip
+    terrain.js              pool de workers y caché de teselas
+    structures.js           escaneo de estructuras
+    structure-icons.js      un icono por familia de estructura
+  workers/                  todo lo que corre fuera del hilo principal
+    terrain-worker.js       decodifica un region file y pinta su tesela de 512x512
+    structures-worker.js    lee las estructuras de un region file
+    nbt-lite.js             lector de NBT recortado, para los workers
+    blockcolors.js          paleta bloque -> color
+    biomecolors.js          paleta bioma -> color
+  ui/
+    app.js                  estado compartido y ciclo de repintado
+    panel.js                pintado de la barra lateral
+    structures-menu.js      desplegable de estructuras
+    live-status.js          chapa de seguimiento en vivo
+    files.js                elegir y soltar la carpeta
+    settings.js             tema e idioma
+    format.js               formateo de texto, incluidos los códigos § de Minecraft
+    main.js                 cableado y arranque
+tools/                      comprobaciones que corren sin navegador
 ```
+
+La carpeta `js/workers/` es autocontenida a propósito: lo que un worker carga
+con `importScripts` está a su lado, así que mover archivos nunca la rompe.
+
+Con `node tools/test.js` se comprueba todo: que la página arranca, que el lector
+del save y el modelo de tickets cuadran, que la interfaz se rellena entera con un
+mundo de mentira y que la cola de teselas no se atasca. No hay nada que instalar.
 
 ---
 
@@ -294,6 +364,8 @@ arrastar pastas, um navegador baseado em Chromium ou um Firefox recente.
 | Nome, versão, spawn, gamerules  | `level.dat` (NBT + gzip)                                                        |
 | Jogador em mundo de um jogador  | `level.dat` → `Data.Player.Pos`                                                 |
 | World border                    | `level.dat` → `Data.BorderCenterX/Z`, `Data.BorderSize`                         |
+| Chunk loaders (portal)          | `<dim>/poi/r.X.Z.mca` + uma entidade em cima em `<dim>/entities/r.X.Z.mca`      |
+| Chunk loaders (pérola)          | `<dim>/entities/r.X.Z.mca` → `minecraft:ender_pearl` (1.17+)                    |
 | Jogadores em servidor           | `playerdata/<uuid>.dat` → `Pos`, `Dimension`                                    |
 | Chunks fixados com `/forceload` | `<dim>/data/chunks.dat` → `data.Forced` (LongArray de `ChunkPos` empacotados)   |
 | Chunks gerados e o último save  | cabeçalho de `<dim>/region/r.X.Z.mca` (4 KiB de posições + 4 KiB de timestamps) |
@@ -319,8 +391,11 @@ execução. O que a página mostra é uma reconstrução dos _tickets_ que exist
   caso precise.
 - **Jogadores**: a distância de simulação não fica no mundo, e sim no `server.properties` ou nas opções
   do cliente, então é um controle da interface (10 por padrão).
-- **Chunk loaders** com pérolas do end, portais ou mods: dependem do estado em execução e não são
-  gravados em disco, então não aparecem.
+- **Chunk loaders**: o ticket nunca é escrito em disco, então são deduzidos da entidade por trás
+  deles: uma pérola do end salva em pleno voo, ou qualquer coisa parada sobre um portal do Nether.
+  Isso cobre o que o vanilla realmente consegue carregar; hoppers, relógios de redstone e granjas não
+  carregam nada sozinhos, e os loaders de mods dependem do servidor em execução e não deixam rastro.
+  O raio é um controle da interface, como a distância de simulação.
 
 O modelo de tickets é o de sempre: raio _r_ com _entity ticking_, mais um anel com _block ticking_ e
 mais um anel apenas carregado (borda).
@@ -328,20 +403,50 @@ mais um anel apenas carregado (borda).
 ## Estrutura
 
 ```
-index.html        landing + interface
-css/styles.css
-js/i18n.js        textos nos cinco idiomas + troca na hora
-js/theme.js       modo claro / escuro com preferência lembrada
-js/blockcolors.js paleta bloco -> cor para o terreno
-js/biomecolors.js paleta bioma -> cor para o mapa de biomas
-js/terrain.js     pool de workers e cache de tiles
-js/terrain-worker.js  decodifica um region file e pinta seu tile de 512x512
-js/nbt.js         parser NBT (gzip/zlib via DecompressionStream)
-js/world.js       leitura da pasta do mundo e dos cabeçalhos .mca
-js/chunks.js      cálculo de tickets → chunks carregados
-js/map.js         render em canvas, pan/zoom, tooltip
-js/main.js        interface
+index.html                  a página
+css/
+  base.css                  paleta, tipografia, controles
+  hero.css                  capa e rodapé
+  panel.css                 barra lateral
+  map.css                   mapa, barra de ferramentas, tooltip, legenda
+js/
+  core/
+    i18n.js                 textos em cinco idiomas + troca ao vivo
+    theme.js                modo claro / escuro com preferência lembrada
+  data/
+    nbt.js                  leitor de NBT (gzip/zlib com DecompressionStream)
+    world.js                lê a pasta do mundo e os cabeçalhos .mca
+    chunks.js               tickets → chunks carregados
+    live.js                 vigia a pasta e relê o que muda
+  render/
+    map.js                  render em canvas, pan/zoom, tooltip
+    terrain.js              pool de workers e cache de tiles
+    structures.js           varredura de estruturas
+    structure-icons.js      um ícone por família de estrutura
+  workers/                  tudo o que roda fora da thread principal
+    terrain-worker.js       decodifica um region file e pinta seu tile de 512x512
+    structures-worker.js    lê as estruturas de um region file
+    nbt-lite.js             leitor de NBT enxuto, para os workers
+    blockcolors.js          paleta bloco -> cor
+    biomecolors.js          paleta bioma -> cor
+  ui/
+    app.js                  estado compartilhado e ciclo de repintura
+    panel.js                pintura da barra lateral
+    structures-menu.js      menu de estruturas
+    live-status.js          selo de acompanhamento ao vivo
+    files.js                escolher e soltar a pasta
+    settings.js             tema e idioma
+    format.js               formatação de texto, incluindo os códigos § do Minecraft
+    main.js                 ligação e arranque
+tools/                      verificações que rodam sem navegador
 ```
+
+A pasta `js/workers/` é autocontida de propósito: o que um worker carrega com
+`importScripts` fica ao lado dele, então mover arquivos nunca a quebra.
+
+Com `node tools/test.js` dá para checar tudo: que a página sobe, que o leitor do
+save e o modelo de tickets batem, que a interface se preenche inteira com um mundo
+de mentira e que a fila de tiles não trava. Não há nada para instalar.
 
 ---
 
@@ -405,6 +510,8 @@ python3 -m http.server 8080   # 然后打开 http://localhost:8080
 | 名称、版本、出生点、游戏规则 | `level.dat`（NBT + gzip）                                                |
 | 单人世界的玩家               | `level.dat` → `Data.Player.Pos`                                          |
 | 世界边界                     | `level.dat` → `Data.BorderCenterX/Z`、`Data.BorderSize`                  |
+| 区块加载器（传送门）         | `<dim>/poi/r.X.Z.mca` + `<dim>/entities/r.X.Z.mca` 中压在上面的实体      |
+| 区块加载器（珍珠）           | `<dim>/entities/r.X.Z.mca` → `minecraft:ender_pearl`（1.17+）            |
 | 服务器上的玩家               | `playerdata/<uuid>.dat` → `Pos`、`Dimension`                             |
 | 用 `/forceload` 固定的区块   | `<dim>/data/chunks.dat` → `data.Forced`（打包后的 `ChunkPos` LongArray） |
 | 已生成的区块及上次保存时间   | `<dim>/region/r.X.Z.mca` 的文件头（4 KiB 位置表 + 4 KiB 时间戳）         |
@@ -427,27 +534,56 @@ python3 -m http.server 8080   # 然后打开 http://localhost:8080
   entity ticking 区块。1.21.9 及以后的世界完全没有：出生点区块已从游戏中移除。仍保留手动调整选项。
 - **玩家**：模拟距离不在世界文件里，而在 `server.properties` 或客户端设置中，所以它是界面上的一个选项
   （默认 10）。
-- **区块加载器**：用末影珍珠、传送门或模组做的那种依赖运行时状态，不会写入磁盘，因此不会显示。
+- **区块加载器**：ticket 从不写入磁盘，所以只能从背后的实体推算：存档里飞行中的末影珍珠，或者停在下界传送门上的任何实体。这已经涵盖了原版真正能加载区块的方式；漏斗、红石时钟和农场自己不加载任何东西，模组的加载器依赖运行中的服务器，完全不留痕迹。半径是界面上的可调项，和模拟距离一样。
 
 票据模型是常见的那一套：半径 _r_ 为 _entity ticking_，外面一圈 _block ticking_，再外面一圈仅加载（边界）。
 
 ## 项目结构
 
 ```
-index.html        落地页 + 界面
-css/styles.css
-js/i18n.js        五种语言的文本 + 即时切换
-js/theme.js       浅色 / 深色模式，记住偏好
-js/blockcolors.js 方块 -> 颜色，用于地形
-js/biomecolors.js 生物群系 -> 颜色，用于生物群系地图
-js/terrain.js     worker 池与图块缓存
-js/terrain-worker.js  解码 region 文件并绘制 512x512 图块
-js/nbt.js         NBT 解析器（通过 DecompressionStream 处理 gzip/zlib）
-js/world.js       读取世界文件夹与 .mca 文件头
-js/chunks.js      由票据计算加载的区块
-js/map.js         canvas 渲染、平移缩放、提示框
-js/main.js        界面逻辑
+index.html                  页面本身
+css/
+  base.css                  配色、排版、控件
+  hero.css                  首页与页脚
+  panel.css                 侧边栏
+  map.css                   地图、工具栏、提示框、图例
+js/
+  core/
+    i18n.js                 五种语言的文案 + 实时切换
+    theme.js                浅色 / 深色模式，记住选择
+  data/
+    nbt.js                  NBT 解析器（用 DecompressionStream 处理 gzip/zlib）
+    world.js                读取世界文件夹和 .mca 头部
+    chunks.js               ticket → 已加载区块
+    live.js                 盯着文件夹，重读变化的部分
+  render/
+    map.js                  canvas 渲染、平移缩放、提示框
+    terrain.js              worker 池与瓦片缓存
+    structures.js           结构扫描
+    structure-icons.js      每类结构一个图标
+  workers/                  所有在主线程之外运行的东西
+    terrain-worker.js       解码 region file 并绘制 512x512 瓦片
+    structures-worker.js    从 region file 读取结构
+    nbt-lite.js             给 worker 用的精简 NBT 读取器
+    blockcolors.js          方块 -> 颜色调色板
+    biomecolors.js          生物群系 -> 颜色调色板
+  ui/
+    app.js                  共享状态与重绘流程
+    panel.js                侧边栏渲染
+    structures-menu.js      结构下拉菜单
+    live-status.js          实时跟踪标记
+    files.js                选择和拖放文件夹
+    settings.js             主题与语言
+    format.js               文本格式化，包括 Minecraft 的 § 代码
+    main.js                 接线与启动
+tools/                      不用浏览器就能跑的检查
 ```
+
+`js/workers/` 是刻意自包含的：worker 用 `importScripts` 加载的东西就放在它旁边，
+所以挪动文件不会把它弄坏。
+
+运行 `node tools/test.js` 可以检查全部：页面能启动、存档读取器和 ticket 模型一致、
+界面能用假世界完整填充、瓦片队列不会卡住。不需要安装任何依赖。
 
 ---
 
@@ -516,6 +652,8 @@ python3 -m http.server 8080   # и откройте http://localhost:8080
 | Название, версия, спавн, игровые правила | `level.dat` (NBT + gzip)                                                   |
 | Игрок в одиночном мире                   | `level.dat` → `Data.Player.Pos`                                            |
 | Граница мира                             | `level.dat` → `Data.BorderCenterX/Z`, `Data.BorderSize`                    |
+| Чанклоадеры (портал)                     | `<dim>/poi/r.X.Z.mca` + сущность на нём в `<dim>/entities/r.X.Z.mca`       |
+| Чанклоадеры (жемчуг)                     | `<dim>/entities/r.X.Z.mca` → `minecraft:ender_pearl` (1.17+)               |
 | Игроки на сервере                        | `playerdata/<uuid>.dat` → `Pos`, `Dimension`                               |
 | Чанки, закреплённые через `/forceload`   | `<dim>/data/chunks.dat` → `data.Forced` (LongArray упакованных `ChunkPos`) |
 | Сгенерированные чанки и время сохранения | заголовок `<dim>/region/r.X.Z.mca` (4 KiB позиций + 4 KiB меток времени)   |
@@ -540,8 +678,11 @@ python3 -m http.server 8080   # и откройте http://localhost:8080
   с 1.21.9 их нет вовсе: спавн-чанки убрали из игры. Ручная настройка остаётся на всякий случай.
 - **Игроки**: дистанция симуляции хранится не в мире, а в `server.properties` или в настройках клиента,
   поэтому это параметр интерфейса (по умолчанию 10).
-- **Чанклоадеры** из эндер-жемчуга, порталов или модов: они зависят от состояния работающего сервера и
-  на диск не пишутся, поэтому не отображаются.
+- **Чанклоадеры**: тикет на диск не пишется никогда, поэтому они выводятся по сущности, которая их
+  создаёт: эндер-жемчуг, сохранённый в полёте, или что угодно, стоящее на портале в Нижний мир. Этим
+  покрыто всё, чем ваниль реально грузит чанки; воронки, редстоун-часы и фермы сами по себе не грузят
+  ничего, а модовые лоадеры зависят от работающего сервера и следов не оставляют. Радиус задаётся в
+  интерфейсе, как и дистанция симуляции.
 
 Модель тикетов обычная: радиус _r_ с _entity ticking_, ещё одно кольцо с _block ticking_ и ещё одно —
 просто загруженное (граница).
@@ -549,17 +690,47 @@ python3 -m http.server 8080   # и откройте http://localhost:8080
 ## Структура
 
 ```
-index.html        лендинг + интерфейс
-css/styles.css
-js/i18n.js        тексты на пяти языках + переключение на лету
-js/theme.js       светлая / тёмная тема с запоминанием выбора
-js/blockcolors.js палитра блок -> цвет для рельефа
-js/biomecolors.js палитра биом -> цвет для карты биомов
-js/terrain.js     пул воркеров и кеш тайлов
-js/terrain-worker.js  декодирует файл региона и рисует его тайл 512x512
-js/nbt.js         парсер NBT (gzip/zlib через DecompressionStream)
-js/world.js       чтение папки мира и заголовков .mca
-js/chunks.js      расчёт тикетов → загруженные чанки
-js/map.js         отрисовка на canvas, панорама/зум, подсказка
-js/main.js        интерфейс
+index.html                  сама страница
+css/
+  base.css                  палитра, типографика, элементы управления
+  hero.css                  титульная часть и подвал
+  panel.css                 боковая панель
+  map.css                   карта, панель инструментов, подсказка, легенда
+js/
+  core/
+    i18n.js                 тексты на пяти языках + переключение на лету
+    theme.js                светлая / тёмная тема с запоминанием
+  data/
+    nbt.js                  разбор NBT (gzip/zlib через DecompressionStream)
+    world.js                читает папку мира и заголовки .mca
+    chunks.js               тикеты → загруженные чанки
+    live.js                 следит за папкой и перечитывает изменившееся
+  render/
+    map.js                  отрисовка на canvas, панорама и зум, подсказка
+    terrain.js              пул воркеров и кэш тайлов
+    structures.js           сканирование структур
+    structure-icons.js      по иконке на семейство структур
+  workers/                  всё, что работает вне главного потока
+    terrain-worker.js       разбирает region file и рисует его тайл 512x512
+    structures-worker.js    читает структуры из region file
+    nbt-lite.js             урезанный читатель NBT для воркеров
+    blockcolors.js          палитра блок -> цвет
+    biomecolors.js          палитра биом -> цвет
+  ui/
+    app.js                  общее состояние и цикл перерисовки
+    panel.js                отрисовка боковой панели
+    structures-menu.js      выпадающий список структур
+    live-status.js          плашка слежения в реальном времени
+    files.js                выбор и перетаскивание папки
+    settings.js             тема и язык
+    format.js               форматирование текста, включая коды § из Minecraft
+    main.js                 связывание и запуск
+tools/                      проверки, которым не нужен браузер
 ```
+
+Папка `js/workers/` намеренно самодостаточна: то, что воркер грузит через
+`importScripts`, лежит рядом с ним, поэтому перенос файлов её не ломает.
+
+Команда `node tools/test.js` проверяет всё: страница поднимается, читатель
+сохранения и модель тикетов сходятся, интерфейс целиком заполняется по
+выдуманному миру, очередь тайлов не застревает. Ставить ничего не нужно.

@@ -1,0 +1,201 @@
+/*
+ * Portada: lo que se ve antes de cargar un mundo.
+ *
+ * Titular, zona para soltar la carpeta, explicación de abajo y pie.
+ */
+
+/* ---------- Hero ---------- */
+.hero {
+    padding: 64px 0 48px;
+    background:
+        radial-gradient(900px 400px at 20% -10%, var(--hero-glow-a), transparent 60%),
+        radial-gradient(800px 400px at 85% 0%, var(--hero-glow-b), transparent 60%), var(--bg);
+    border-bottom: 1px solid var(--line);
+}
+.badge {
+    display: inline-block;
+    font-size: 12px;
+    letter-spacing: 0.02em;
+    color: var(--muted);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 5px 12px;
+    margin-bottom: 18px;
+}
+.hero h1 {
+    margin: 0 0 14px;
+    font-size: clamp(30px, 5vw, 50px);
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+}
+.grad {
+    background: linear-gradient(90deg, var(--spawn), var(--player) 55%, var(--force));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+.lead {
+    max-width: 62ch;
+    color: var(--text-soft);
+    font-size: 17px;
+}
+
+.drop {
+    margin: 30px 0 14px;
+    border: 2px dashed var(--line);
+    border-radius: 16px;
+    background: var(--drop-bg);
+    transition:
+        border-color 0.15s,
+        background 0.15s;
+}
+.drop.over {
+    border-color: var(--accent);
+    background: var(--drop-over);
+}
+.drop-inner {
+    padding: 34px 20px;
+    text-align: center;
+    color: var(--muted);
+}
+.drop-inner p {
+    margin: 10px 0;
+}
+.btns {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 6px;
+}
+.hint {
+    font-size: 13px;
+}
+.err {
+    color: var(--danger);
+}
+
+.btn {
+    font: inherit;
+    border-radius: 10px;
+    padding: 9px 16px;
+    border: 1px solid var(--line);
+    background: var(--card);
+    color: var(--text);
+    cursor: pointer;
+    transition:
+        border-color 0.15s,
+        background 0.15s;
+}
+.btn:hover {
+    border-color: var(--accent);
+}
+.btn.primary {
+    background: linear-gradient(90deg, #1d4ed8, #0ea5e9);
+    border-color: transparent;
+    color: #fff;
+    font-weight: 600;
+}
+.btn.ghost {
+    background: transparent;
+}
+.btn.small {
+    padding: 5px 10px;
+    font-size: 13px;
+}
+.btn.wide {
+    width: 100%;
+    margin-top: 4px;
+}
+
+.where {
+    margin-top: 10px;
+    color: var(--muted);
+    font-size: 14px;
+}
+.where summary {
+    cursor: pointer;
+}
+.where ul {
+    margin: 10px 0 0;
+    padding-left: 18px;
+}
+.where li {
+    margin: 4px 0;
+}
+
+
+/* ---------- Carga ---------- */
+.loading {
+    position: fixed;
+    inset: 0;
+    background: color-mix(in srgb, var(--bg) 86%, transparent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+}
+.loading-box {
+    width: min(420px, 86vw);
+    text-align: center;
+}
+.bar {
+    height: 6px;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    overflow: hidden;
+}
+.bar-fill {
+    height: 100%;
+    width: 0;
+    background: linear-gradient(90deg, var(--spawn), var(--player));
+    transition: width 0.1s linear;
+}
+#loadingText {
+    color: var(--muted);
+    font-size: 13px;
+    margin-top: 12px;
+}
+
+/* ---------- Explicación ---------- */
+.explain {
+    padding: 56px 20px 20px;
+}
+.explain h2 {
+    font-size: 24px;
+    margin: 0 0 20px;
+}
+.cols {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 18px;
+}
+.cols article {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 16px;
+    box-shadow: var(--shadow);
+}
+.cols h3 {
+    margin: 0 0 8px;
+    font-size: 15px;
+}
+.cols p {
+    margin: 0;
+    font-size: 14px;
+    color: var(--text-soft);
+}
+.fine {
+    color: var(--muted);
+    font-size: 13px;
+    margin-top: 20px;
+}
+.foot {
+    padding: 24px 20px 48px;
+    color: var(--muted);
+    font-size: 13px;
+    border-top: 1px solid var(--line);
+    margin-top: 32px;
+}

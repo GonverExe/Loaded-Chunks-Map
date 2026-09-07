@@ -94,6 +94,29 @@
             }
         }
 
+        /*
+         * Chunk loaders. El ticket que los mantiene vivos no se guarda nunca, así
+         * que esto no es un dato leído sino una reconstrucción a partir de la
+         * entidad que lo provoca: una perla de ender a medio vuelo o algo parado
+         * sobre un portal del Nether.
+         */
+        if (options.useLoaders) {
+            for (const l of dim.loaders) {
+                stamp(
+                    map,
+                    l.chunkX,
+                    l.chunkZ,
+                    options.loaderRadius,
+                    'loader',
+                    I18n.t(l.kind === 'pearl' ? 'detail.loaderPearl' : 'detail.loaderPortal', {
+                        x: Math.round(l.x),
+                        z: Math.round(l.z),
+                        n: l.entities.length,
+                    }),
+                );
+            }
+        }
+
         return map;
     }
 

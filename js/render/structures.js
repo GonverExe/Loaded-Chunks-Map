@@ -98,6 +98,7 @@
         onScan: null,
         onProgress: null,
         nextId: 1,
+        jobs: [], // trabajo que tiene cada worker, para recuperarlo si muere
     };
 
     function start() {
@@ -107,11 +108,12 @@
             // del render de terreno y no conviene quitarle hilos.
             const n = Math.max(1, Math.min(2, (navigator.hardwareConcurrency || 2) - 1));
             for (let i = 0; i < n; i++) {
-                const w = new Worker('js/structures-worker.js');
+                const w = new Worker('js/workers/structures-worker.js');
                 w.onmessage = (e) => onResult(i, e.data);
                 w.onerror = () => onResult(i, null);
                 state.workers.push(w);
                 state.busy.push(false);
+                state.jobs.push(null);
             }
             state.available = true;
         } catch (_) {
@@ -139,7 +141,19 @@
     }
 
     function onResult(slot, msg) {
+        const job = state.jobs[slot];
         state.busy[slot] = false;
+        state.jobs[slot] = null;
+        /*
+         * El worker ha muerto sin decir de qué región venía: se saca del trabajo
+         * que tenía. Sin esto la región se queda como pendiente para siempre, no
+         * se vuelve a escanear nunca y el contador de progreso no llega al final.
+         */
+        if (!msg && job) {
+            state.pending.delete(job.key);
+            state.regions.set(job.key, []);
+            state.done++;
+        }
         if (msg) {
             const k = key(msg.rx, msg.rz);
             state.pending.delete(k);
@@ -171,6 +185,7 @@
             if (state.busy[i] || !state.queue.length) continue;
             const job = state.queue.shift();
             state.busy[i] = true;
+            state.jobs[i] = job;
             job.file
                 .arrayBuffer()
                 .then((buffer) => {
@@ -186,6 +201,7 @@
     function resetQueue() {
         state.queue = [];
         state.pending.clear();
+        for (let i = 0; i < state.jobs.length; i++) state.jobs[i] = null;
         state.done = 0;
         state.total = 0;
     }

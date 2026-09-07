@@ -1,6 +1,6 @@
 /*
- * Seguimiento en vivo del mundo: cada pocos segundos vuelve a recorrer la
- * carpeta del save y relee lo que ha cambiado.
+ * Seguimiento en vivo del mundo: vigila la carpeta del save y relee lo que ha
+ * cambiado en cuanto el juego guarda.
  *
  * Hace falta la File System Access API. Los File que deja un <input
  * webkitdirectory> o un drag&drop son una foto fija: en cuanto Minecraft
@@ -20,7 +20,20 @@
 (function (global) {
     'use strict';
 
-    const INTERVAL = 1000;
+    /*
+     * Dos ritmos, porque el juego no escribe cuando quiere el navegador sino cuando
+     * le toca a él:
+     *
+     *  - INTERVAL: la pasada completa (listar la carpeta, releer level.dat,
+     *    jugadores, forceload y lo que haya cambiado). Va al ritmo del autoguardado,
+     *    5 minutos, porque antes de eso no suele haber nada nuevo que leer.
+     *  - WATCH: un latido corto que solo mira la fecha de cuatro archivos testigo,
+     *    sin abrir ninguno. Si el juego acaba de guardar (un /save-all, un cambio de
+     *    dimensión, la salida del mundo), la pasada completa se dispara al momento
+     *    en vez de esperar a que venza el ciclo largo.
+     */
+    const INTERVAL = 5 * 60 * 1000;
+    const WATCH = 2000;
 
     /*
      * Ventana para dar el mundo por abierto. El autoguardado va cada 5 minutos,
@@ -38,6 +51,8 @@
         dir: null, // FileSystemDirectoryHandle de la carpeta del mundo
         timer: null,
         tick: null,
+        watch: null, // latido corto que vigila si el juego ha guardado
+        witness: 0, // fecha más reciente de los archivos testigo
         running: false,
         busy: false,
         secondsLeft: 0,
@@ -116,14 +131,14 @@
      * que hace el <input webkitdirectory>, para que WorldReader no note la
      * diferencia.
      *
-     * Se poda lo que no se lee nunca: region/ de entities y poi pesa mucho y no
-     * aporta nada al mapa.
+     * poi/ y entities/ sí entran: de ahí salen los portales del Nether y lo que
+     * tengan encima. Aquí solo se listan (fecha y tamaño); leerlos de verdad
+     * cuesta, así que WorldReader lo hace solo cuando su huella cambia.
      */
     async function walk(dir, prefix, out) {
         for await (const entry of dir.values()) {
             const path = prefix ? prefix + '/' + entry.name : entry.name;
             if (entry.kind === 'directory') {
-                if (entry.name === 'entities' || entry.name === 'poi') continue;
                 await walk(entry, path, out);
             } else {
                 const lower = entry.name.toLowerCase();
@@ -154,6 +169,46 @@
     async function listFiles() {
         if (!state.dir) return [];
         return await walk(state.dir, '', []);
+    }
+
+    /*
+     * Fecha del guardado más reciente, mirando solo los archivos testigo. No abre
+     * ninguno: pregunta la fecha y ya, así que sale casi gratis y se puede repetir
+     * cada dos segundos sin que se note.
+     *
+     * Los testigos son level.dat (lo reescribe cualquier guardado, sea el
+     * autoguardado o un /save-all), session.lock (se toca al abrir el mundo) y los
+     * playerdata, que además se escriben al cambiar de dimensión o al desconectar.
+     * Con eso se pilla todo lo que pueda mover el mapa; lo que se escapara caería
+     * igualmente en la pasada completa de cada cinco minutos.
+     */
+    async function witnessStamp() {
+        if (!state.dir) return 0;
+        let newest = 0;
+        const mirar = async (handle) => {
+            try {
+                const f = await handle.getFile();
+                if (f.lastModified > newest) newest = f.lastModified;
+            } catch (_) {
+                /* el juego lo tiene abierto justo ahora: se verá en la siguiente vuelta */
+            }
+        };
+        for (const nombre of ['level.dat', 'session.lock']) {
+            try {
+                await mirar(await state.dir.getFileHandle(nombre));
+            } catch (_) {
+                /* no existe en este mundo */
+            }
+        }
+        try {
+            const pd = await state.dir.getDirectoryHandle('playerdata');
+            for await (const entry of pd.values()) {
+                if (entry.kind === 'file') await mirar(entry);
+            }
+        } catch (_) {
+            /* mundo sin playerdata/ */
+        }
+        return newest;
     }
 
     /* Una pasada: relee lo que haya cambiado y avisa del resumen. */
@@ -193,21 +248,33 @@
         state.running = true;
         state.secondsLeft = INTERVAL / 1000;
 
+        // Una pasada completa, venga del ciclo largo o del latido, deja el
+        // contador a cero otra vez: lo que importa es cuándo se miró de verdad.
+        const pasada = async () => {
+            await checkNow(getWorld());
+            state.witness = await witnessStamp();
+            state.secondsLeft = INTERVAL / 1000;
+            if (state.onTick) state.onTick(state.secondsLeft);
+        };
+
         state.tick = setInterval(() => {
             state.secondsLeft = Math.max(0, state.secondsLeft - 1);
             if (state.onTick) state.onTick(state.secondsLeft);
         }, 1000);
 
-        state.timer = setInterval(async () => {
-            await checkNow(getWorld());
-            state.secondsLeft = INTERVAL / 1000;
-            if (state.onTick) state.onTick(state.secondsLeft);
-        }, INTERVAL);
+        state.timer = setInterval(pasada, INTERVAL);
+
+        // El latido no lee el mundo: solo mira si alguien ha guardado. Cuando lo
+        // detecta, adelanta la pasada completa en vez de esperar los 5 minutos.
+        state.watch = setInterval(async () => {
+            if (state.busy) return;
+            const ahora = await witnessStamp();
+            if (ahora && ahora !== state.witness) await pasada();
+        }, WATCH);
 
         // Una primera pasada inmediata: si el mundo ya estaba abierto, lo que se
         // ve pasa a estar al día sin esperar al primer ciclo.
-        await checkNow(getWorld());
-        if (state.onTick) state.onTick(state.secondsLeft);
+        await pasada();
         return true;
     }
 
@@ -241,8 +308,11 @@
         state.running = false;
         if (state.timer) clearInterval(state.timer);
         if (state.tick) clearInterval(state.tick);
+        if (state.watch) clearInterval(state.watch);
         state.timer = null;
         state.tick = null;
+        state.watch = null;
+        state.witness = 0;
     }
 
     global.Live = {

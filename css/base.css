@@ -1,0 +1,185 @@
+/*
+ * Base: paleta, tipografía y controles.
+ *
+ * Las variables de tema mandan sobre todo lo demás, incluidos los
+ * colores que el canvas lee desde JavaScript. Aquí viven también el
+ * reset, los botones y los campos de formulario.
+ */
+
+/* ---------- Temas ---------- */
+:root,
+:root[data-theme='dark'] {
+    --bg: #070a11;
+    --bg-soft: #0e1420;
+    --card: #131b29;
+    --line: #22304a;
+    --text: #e6edf7;
+    --text-soft: #c8d4e6;
+    --muted: #93a3bd;
+    --spawn: #4ade80;
+    --player: #60a5fa;
+    --force: #c084fc;
+    --loader: #fb923c;
+    --gen: #2c3a52;
+    --accent: #38bdf8;
+    --warn: #fbbf24;
+    --danger: #f87171;
+    --shadow: none;
+
+    --hero-glow-a: rgba(74, 222, 128, 0.14);
+    --hero-glow-b: rgba(96, 165, 250, 0.16);
+    --code-bg: rgba(255, 255, 255, 0.07);
+    --drop-bg: rgba(19, 27, 41, 0.6);
+    --drop-over: rgba(56, 189, 248, 0.08);
+    --tooltip-bg: rgba(8, 12, 20, 0.95);
+
+    /* Colores que consume el canvas del mapa */
+    --map-bg: #0b0f17;
+    --map-gen: #1c2433;
+    --map-grid: rgba(255, 255, 255, 0.05);
+    --map-region-grid: rgba(255, 255, 255, 0.12);
+    --map-axis: rgba(255, 255, 255, 0.22);
+    --map-text: #e6edf7;
+    --map-scale: rgba(255, 255, 255, 0.65);
+    --map-scale-line: rgba(255, 255, 255, 0.5);
+    --map-hover: #ffffff;
+    --map-empty: rgba(255, 255, 255, 0.25);
+    --map-recent-rgb: 245, 158, 11;
+    /* Aro de "región en camino" */
+    --map-load-mark: rgba(125, 211, 252, 0.85);
+    /* World border: el azul del muro que dibuja el juego. */
+    --map-worldborder: #38a3ff;
+}
+
+:root[data-theme='light'] {
+    --bg: #f4f7fb;
+    --bg-soft: #ffffff;
+    --card: #ffffff;
+    --line: #d5dfec;
+    --text: #16202e;
+    --text-soft: #3c4c62;
+    --muted: #5e6e86;
+    --spawn: #16a34a;
+    --player: #2563eb;
+    --force: #9333ea;
+    --loader: #ea580c;
+    --gen: #c2cee0;
+    --accent: #0284c7;
+    --warn: #b45309;
+    --danger: #dc2626;
+    --shadow: 0 1px 2px rgba(15, 30, 55, 0.06);
+
+    --hero-glow-a: rgba(22, 163, 74, 0.12);
+    --hero-glow-b: rgba(37, 99, 235, 0.12);
+    --code-bg: rgba(15, 30, 55, 0.07);
+    --drop-bg: rgba(255, 255, 255, 0.75);
+    --drop-over: rgba(2, 132, 199, 0.08);
+    --tooltip-bg: rgba(255, 255, 255, 0.97);
+
+    --map-bg: #eef3f9;
+    --map-gen: #ccd7e6;
+    --map-grid: rgba(15, 30, 55, 0.07);
+    --map-region-grid: rgba(15, 30, 55, 0.18);
+    --map-axis: rgba(15, 30, 55, 0.32);
+    --map-text: #16202e;
+    --map-scale: rgba(15, 30, 55, 0.7);
+    --map-scale-line: rgba(15, 30, 55, 0.55);
+    --map-hover: #0f1e37;
+    --map-empty: rgba(15, 30, 55, 0.35);
+    --map-recent-rgb: 217, 119, 6;
+    --map-load-mark: rgba(2, 132, 199, 0.8);
+    --map-worldborder: #1d6fe0;
+}
+
+* {
+    box-sizing: border-box;
+}
+[hidden] {
+    display: none !important;
+}
+
+html,
+body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font:
+        15px/1.55 system-ui,
+        -apple-system,
+        'Segoe UI',
+        Roboto,
+        sans-serif;
+}
+html {
+    color-scheme: dark;
+}
+:root[data-theme='light'] {
+    color-scheme: light;
+}
+body {
+    transition:
+        background-color 0.18s ease,
+        color 0.18s ease;
+}
+
+code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.9em;
+    background: var(--code-bg);
+    border-radius: 4px;
+    padding: 1px 5px;
+}
+.wrap {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+/* ---------- Ajustes (tema e idioma) ---------- */
+.topbar {
+    position: fixed;
+    top: 12px;
+    right: 14px;
+    z-index: 40;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    padding: 5px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--card);
+    box-shadow: var(--shadow);
+}
+.icon-btn {
+    width: 32px;
+    height: 32px;
+    display: grid;
+    place-items: center;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--text);
+    cursor: pointer;
+}
+.icon-btn:hover {
+    background: var(--code-bg);
+}
+.icon-btn svg {
+    width: 17px;
+    height: 17px;
+}
+.lang-select {
+    width: auto;
+    background: var(--bg-soft);
+    color: var(--text);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    font:
+        500 13px/1 system-ui,
+        sans-serif;
+    padding: 7px 8px;
+    cursor: pointer;
+}
+.lang-select:hover {
+    background: var(--code-bg);
+}

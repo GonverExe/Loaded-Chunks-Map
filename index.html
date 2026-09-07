@@ -13,7 +13,10 @@
             rel="icon"
             href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%230b0f17'/><rect x='6' y='6' width='9' height='9' fill='%234ade80'/><rect x='17' y='6' width='9' height='9' fill='%2360a5fa'/><rect x='6' y='17' width='9' height='9' fill='%23c084fc'/><rect x='17' y='17' width='9' height='9' fill='%231c2433'/></svg>"
         />
-        <link rel="stylesheet" href="css/styles.css" />
+        <link rel="stylesheet" href="css/base.css" />
+        <link rel="stylesheet" href="css/hero.css" />
+        <link rel="stylesheet" href="css/panel.css" />
+        <link rel="stylesheet" href="css/map.css" />
         <script>
             /* Tema antes del primer pintado, para que no haya destello. */
             (function () {
@@ -148,6 +151,26 @@
                             ></span>
                             <span data-i18n="src.force"></span
                         ></label>
+
+                        <label class="chk"
+                            ><input type="checkbox" id="srcLoaders" checked /><span
+                                class="dot loader"
+                            ></span>
+                            <span data-i18n="src.loaders"></span
+                        ></label>
+                        <p class="note" id="loaderNote"></p>
+                        <label class="range" id="loaderRadiusRow">
+                            <span data-i18n="ctl.loaderRadius"></span>
+                            <output id="loaderRadiusOut"></output>
+                            <input
+                                type="range"
+                                id="loaderRadius"
+                                min="0"
+                                max="8"
+                                step="1"
+                                value="3"
+                            />
+                        </label>
                     </section>
 
                     <section class="card">
@@ -158,6 +181,33 @@
                             <option value="biomes" data-i18n="mode.biomes"></option>
                         </select>
                         <p class="note" id="terrainNote" hidden></p>
+
+                        <div class="dropdown dropdown-side mode-dropdown" id="structMenu">
+                            <button
+                                id="structBtn"
+                                class="btn small"
+                                type="button"
+                                aria-haspopup="true"
+                                aria-expanded="false"
+                                aria-controls="structPanel"
+                            >
+                                <span data-i18n="btn.structures"></span>
+                                <span class="caret" aria-hidden="true"></span>
+                            </button>
+                            <div class="dropdown-panel" id="structPanel" hidden>
+                                <label class="chk struct-all"
+                                    ><input type="checkbox" id="structAll" />
+                                    <span data-i18n="struct.all"></span
+                                ></label>
+                                <p
+                                    class="note struct-note"
+                                    id="structNote"
+                                    data-i18n="struct.hint"
+                                ></p>
+                                <div class="struct-list" id="structList"></div>
+                            </div>
+                        </div>
+
                         <label class="chk"
                             ><input type="checkbox" id="layerLoaded" checked />
                             <span data-i18n="layer.loaded"></span
@@ -191,39 +241,12 @@
                 <div class="map-wrap">
                     <div class="map-toolbar">
                         <div class="tb-side tb-left">
-                            <button id="fit" class="btn small" data-i18n="btn.fit"></button>
-                            <button
-                                id="gotoSpawn"
-                                class="btn small"
-                                data-i18n="btn.gotoSpawn"
-                            ></button>
-                            <select id="gotoPlayer" class="small"></select>
+                            <select
+                                id="gotoPlayer"
+                                class="small"
+                                data-i18n-aria="btn.goto"
+                            ></select>
                             <button id="png" class="btn small" data-i18n="btn.png"></button>
-                            <div class="dropdown" id="structMenu">
-                                <button
-                                    id="structBtn"
-                                    class="btn small"
-                                    type="button"
-                                    aria-haspopup="true"
-                                    aria-expanded="false"
-                                    aria-controls="structPanel"
-                                >
-                                    <span data-i18n="btn.structures"></span>
-                                    <span class="caret" aria-hidden="true"></span>
-                                </button>
-                                <div class="dropdown-panel" id="structPanel" hidden>
-                                    <label class="chk struct-all"
-                                        ><input type="checkbox" id="structAll" />
-                                        <span data-i18n="struct.all"></span
-                                    ></label>
-                                    <p
-                                        class="note struct-note"
-                                        id="structNote"
-                                        data-i18n="struct.hint"
-                                    ></p>
-                                    <div class="struct-list" id="structList"></div>
-                                </div>
-                            </div>
                         </div>
 
                         <div class="tb-center">
@@ -249,6 +272,10 @@
                                 ></span>
                                 <span
                                     ><i class="sw force"></i><span data-i18n="legend.force"></span
+                                ></span>
+                                <span
+                                    ><i class="sw loader"></i
+                                    ><span data-i18n="legend.loader"></span
                                 ></span>
                                 <span
                                     ><i class="sw terrain"></i
@@ -316,17 +343,31 @@
             <p data-i18n="foot"></p>
         </footer>
 
-        <script src="js/i18n.js"></script>
-        <script src="js/theme.js"></script>
-        <script src="js/biomecolors.js"></script>
-        <script src="js/terrain.js"></script>
-        <script src="js/nbt.js"></script>
-        <script src="js/world.js"></script>
-        <script src="js/chunks.js"></script>
-        <script src="js/map.js"></script>
-        <script src="js/structure-icons.js"></script>
-        <script src="js/structures.js"></script>
-        <script src="js/live.js"></script>
-        <script src="js/main.js"></script>
+        <!-- Base: idioma y tema, que usa todo lo demás. -->
+        <script src="js/core/i18n.js"></script>
+        <script src="js/core/theme.js"></script>
+
+        <!-- Lectura del save y modelo de chunks. -->
+        <script src="js/data/nbt.js"></script>
+        <script src="js/data/world.js"></script>
+        <script src="js/data/chunks.js"></script>
+        <script src="js/data/live.js"></script>
+
+        <!-- Pintado del mapa. Los colores de bloques y biomas no hacen falta
+             aquí: viven dentro de los workers, que son quienes los usan. -->
+        <script src="js/render/structure-icons.js"></script>
+        <script src="js/render/terrain.js"></script>
+        <script src="js/render/structures.js"></script>
+        <script src="js/render/map.js"></script>
+
+        <!-- Interfaz. El estado compartido va primero: los demás se cuelgan de él. -->
+        <script src="js/ui/format.js"></script>
+        <script src="js/ui/app.js"></script>
+        <script src="js/ui/panel.js"></script>
+        <script src="js/ui/structures-menu.js"></script>
+        <script src="js/ui/live-status.js"></script>
+        <script src="js/ui/files.js"></script>
+        <script src="js/ui/settings.js"></script>
+        <script src="js/ui/main.js"></script>
     </body>
 </html>

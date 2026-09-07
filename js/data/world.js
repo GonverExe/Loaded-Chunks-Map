@@ -36,6 +36,8 @@
     const RE_REGION = /r\.-?\d+\.-?\d+\.mca$/;
     const RE_REGION_XZ = /r\.(-?\d+)\.(-?\d+)\.mca/i;
     const RE_SIDECAR = /(?:^|\/)(entities|poi)\//;
+    const RE_POI = /(?:^|\/)poi\/r\.-?\d+\.-?\d+\.mca$/;
+    const RE_ENTITIES = /(?:^|\/)entities\/r\.-?\d+\.-?\d+\.mca$/;
     const RE_FORCED = /(?:^|\/)chunks\.dat$/;
     const RE_PLAYER = /(?:^|\/)[0-9a-f]{8}-[0-9a-f-]+\.dat$/;
 
@@ -48,6 +50,9 @@
             regionStamp: new Map(), // "rx,rz" -> huella, para releer solo lo que cambia
             forced: [], // [{x,z}]
             players: [], // [{name, x, z, y, source}]
+            loaders: [], // [{chunkX, chunkZ, x, z, kind, entities:[id]}], de poi/ + entities/
+            poiFiles: new Map(), // "rx,rz" -> File de poi/, para releerlos en vivo
+            entityFiles: new Map(), // "rx,rz" -> File de entities/
             regionFiles: 0,
             lastPlayed: 0,
         };
@@ -136,6 +141,164 @@
         };
     }
 
+    /* ---------- Chunk loaders (poi/ + entities/) ---------- */
+
+    /*
+     * region/, poi/ y entities/ comparten el mismo contenedor .mca: cabecera de
+     * 8 KiB y luego cada chunk comprimido por su cuenta. Esto recorre uno y
+     * entrega el NBT ya parseado de cada chunk que tenga datos. Se descomprime
+     * en lotes porque DecompressionStream es asíncrono y de uno en uno se
+     * arrastra muchísimo.
+     */
+    async function eachChunk(file, onChunk) {
+        const buf = await readFile(file);
+        if (buf.byteLength < 4096) return;
+        const view = new DataView(buf);
+        const trozos = [];
+        for (let i = 0; i < 1024; i++) {
+            const off =
+                (view.getUint8(i * 4) << 16) |
+                (view.getUint8(i * 4 + 1) << 8) |
+                view.getUint8(i * 4 + 2);
+            const sectors = view.getUint8(i * 4 + 3);
+            if (!off || !sectors) continue;
+            const start = off * 4096;
+            if (start + 5 > buf.byteLength) continue;
+            const length = view.getUint32(start);
+            const end = Math.min(buf.byteLength, start + 4 + length);
+            if (end <= start + 5) continue;
+            // Los 5 primeros bytes son longitud y tipo de compresión; NBT.parse
+            // reconoce gzip y zlib solo, así que basta con darle el resto.
+            trozos.push(buf.slice(start + 5, end));
+        }
+        const LOTE = 32;
+        for (let b = 0; b < trozos.length; b += LOTE) {
+            const nbts = await Promise.all(
+                trozos.slice(b, b + LOTE).map(async (bytes) => {
+                    try {
+                        return await NBT.parse(bytes);
+                    } catch (_) {
+                        return null; // chunk ilegible: no vale la pena romper por él
+                    }
+                }),
+            );
+            for (const nbt of nbts) if (nbt) onChunk(nbt.value);
+        }
+    }
+
+    /*
+     * Entidades que delatan un chunk loader.
+     *
+     * Conviene tener claro qué carga chunks en vanilla, porque es menos de lo
+     * que suele creerse: el spawn, los jugadores, /forceload, el ticket que crea
+     * un portal cuando algo lo cruza y la perla de ender mientras vuela. Los
+     * hoppers, los relojes de redstone y las granjas no cargan nada; solo
+     * funcionan si el chunk ya está cargado por otro motivo.
+     *
+     * De todo eso, en el disco no queda ni un ticket. Lo que sí queda escrito es
+     * la entidad que lo provoca, y de ahí sale esta lista:
+     *
+     *  - una perla de ender guardada a medio vuelo: chunk loader clásico;
+     *  - cualquier entidad parada sobre un portal del Nether: al cruzarlo una y
+     *    otra vez mantiene vivo el ticket del portal.
+     */
+    const LOADER_ENTITIES = new Set(['minecraft:ender_pearl']);
+    const PORTAL_NEAR = 16; // bloques hasta el portal para darlo por encima
+
+    /*
+     * poi/r.X.Z.mca: el juego apunta ahí cada bloque de portal del Nether como
+     * punto de interés (lo usa para emparejar portales). Aquí solo interesan
+     * como posible sitio de un loader, no como dato a enseñar: un portal sin
+     * nada encima no carga nada y no sale por ninguna parte.
+     */
+    async function readPortals(file, out) {
+        await eachChunk(file, (chunk) => {
+            const secciones = chunk.Sections;
+            if (!secciones) return;
+            for (const clave of Object.keys(secciones)) {
+                const sec = secciones[clave];
+                const recs = sec && sec.Records;
+                if (!recs || !recs.length) continue;
+                for (const r of recs) {
+                    if (!r || r.type !== 'minecraft:nether_portal') continue;
+                    const pos = r.pos;
+                    if (!pos || pos.length < 3) continue;
+                    const x = Number(pos[0]),
+                        z = Number(pos[2]);
+                    const k = Math.floor(x / 16) + ',' + Math.floor(z / 16);
+                    if (!out.has(k)) out.set(k, { x, z });
+                }
+            }
+        });
+    }
+
+    /* entities/r.X.Z.mca: se queda con lo que carga chunks y descarta el resto. */
+    async function readLoaderEntities(file, portales, out) {
+        await eachChunk(file, (chunk) => {
+            const lista = chunk.Entities;
+            if (!lista || !lista.length) return;
+            for (const e of lista) {
+                const pos = e && e.Pos;
+                if (!pos || pos.length < 3) continue;
+                const id = String((e && e.id) || '');
+                const x = Number(pos[0]),
+                    z = Number(pos[2]);
+                const cx = Math.floor(x / 16),
+                    cz = Math.floor(z / 16);
+                const k = cx + ',' + cz;
+
+                let kind = null;
+                if (LOADER_ENTITIES.has(id)) {
+                    kind = 'pearl';
+                } else {
+                    const p = portales.get(k);
+                    if (p && Math.abs(x - p.x) <= PORTAL_NEAR && Math.abs(z - p.z) <= PORTAL_NEAR) {
+                        kind = 'portal';
+                    }
+                }
+                if (!kind) continue;
+
+                let l = out.get(k);
+                if (!l) {
+                    l = { chunkX: cx, chunkZ: cz, x: x, z: z, kind: kind, entities: [] };
+                    out.set(k, l);
+                }
+                // Una perla manda sobre el portal: es la señal más clara.
+                if (kind === 'pearl') l.kind = 'pearl';
+                l.entities.push(id);
+            }
+        });
+    }
+
+    /*
+     * Recorre poi/ y entities/ de la dimensión y deja en dim.loaders un punto por
+     * chunk que esté cargando. Los entities/ se leen enteros, no solo los de las
+     * regiones con portal: una perla puede estar en cualquier sitio.
+     */
+    async function readLoaders(dim, tick) {
+        dim.loaders = [];
+        const portales = new Map(); // "cx,cz" -> { x, z }
+        for (const [, file] of dim.poiFiles) {
+            try {
+                await readPortals(file, portales);
+            } catch (_) {
+                /* un poi/ ilegible no debe tumbar la carga del mundo entero */
+            }
+            if (tick) tick('poi');
+        }
+
+        const encontrados = new Map(); // "cx,cz" -> loader
+        for (const [, file] of dim.entityFiles) {
+            try {
+                await readLoaderEntities(file, portales, encontrados);
+            } catch (_) {
+                /* entities/ ilegible: esa región se queda sin mirar */
+            }
+            if (tick) tick('entities');
+        }
+        for (const l of encontrados.values()) dim.loaders.push(l);
+    }
+
     /*
      * Margen para considerar que dos playerdata son de la misma tanda de
      * guardado. El juego solo reescribe el archivo de quien está conectado, y el
@@ -198,6 +361,7 @@
             spawnChunkRadius: null, // gamerule leída del level.dat, si existe
             border: null, // world border del level.dat, en bloques
             stalePlayers: 0, // playerdata de gente que no estaba en el último guardado
+            sidecarStamp: null, // huella de los poi/ y entities/ ya leídos
             lastPlayed: null,
             warnings: [],
             dimensions: new Map(),
@@ -206,6 +370,8 @@
         const regionFiles = [];
         const forceloadFiles = [];
         const playerFiles = [];
+        const poiFiles = [];
+        const entityFiles = [];
         let levelDat = null;
         let levelPlayer = null; // { player, mtime }, resuelto junto al playerdata
         const dataPlayers = []; // ídem, uno por archivo de playerdata/
@@ -216,6 +382,10 @@
             // Se acepta tanto la ruta completa (carpeta) como archivos sueltos sin ruta.
             if (RE_LEVEL.test(lower)) {
                 if (!levelDat || path.length < relPath(levelDat).length) levelDat = f;
+            } else if (RE_POI.test(lower)) {
+                poiFiles.push(f);
+            } else if (RE_ENTITIES.test(lower)) {
+                entityFiles.push(f);
             } else if (RE_REGION.test(lower) && !RE_SIDECAR.test(lower)) {
                 regionFiles.push(f);
             } else if (RE_FORCED.test(lower)) {
@@ -232,7 +402,11 @@
         }
 
         const total =
-            regionFiles.length + forceloadFiles.length + playerFiles.length + (levelDat ? 1 : 0);
+            regionFiles.length +
+            forceloadFiles.length +
+            playerFiles.length +
+            poiFiles.length +
+            (levelDat ? 1 : 0);
         let done = 0;
         const tick = (label) => {
             done++;
@@ -316,8 +490,32 @@
             tick(f.name);
         }
 
+        // 5. chunk loaders: perlas en vuelo y entidades sobre un portal
+        registerSidecars(world, poiFiles, entityFiles);
+        for (const dim of world.dimensions.values()) {
+            try {
+                await readLoaders(dim, () => tick('poi'));
+            } catch (e) {
+                world.warnings.push({ file: dim.id + '/entities', msg: e.message });
+            }
+        }
+
         if (!world.dimensions.has('minecraft:overworld')) getDim(world, 'minecraft:overworld');
         return world;
+    }
+
+    /* Coloca los poi/ y entities/ en su dimensión, indexados por región. */
+    function registerSidecars(world, poiFiles, entityFiles) {
+        const meter = (files, campo) => {
+            for (const f of files) {
+                const m = f.name.match(RE_REGION_XZ);
+                if (!m) continue;
+                const dim = getDim(world, dimensionOf(relPath(f)));
+                dim[campo].set(parseInt(m[1], 10) + ',' + parseInt(m[2], 10), f);
+            }
+        };
+        meter(poiFiles, 'poiFiles');
+        meter(entityFiles, 'entityFiles');
     }
 
     /*
@@ -330,12 +528,16 @@
 
     /* Clasifica la lista de archivos igual que load(), sin leer nada todavía. */
     function classify(files) {
-        const out = { level: null, regions: [], forced: [], players: [] };
+        const out = { level: null, regions: [], forced: [], players: [], poi: [], entities: [] };
         for (const f of files) {
             const path = relPath(f);
             const lower = path.toLowerCase();
             if (RE_LEVEL.test(lower)) {
                 if (!out.level || path.length < relPath(out.level).length) out.level = f;
+            } else if (RE_POI.test(lower)) {
+                out.poi.push(f);
+            } else if (RE_ENTITIES.test(lower)) {
+                out.entities.push(f);
             } else if (RE_REGION.test(lower) && !RE_SIDECAR.test(lower)) {
                 out.regions.push(f);
             } else if (RE_FORCED.test(lower)) {
@@ -374,6 +576,7 @@
             forcedChanged: false,
             versionChanged: false,
             spawnChanged: false,
+            loadersChanged: false,
         };
         world.warnings = [];
 
@@ -492,7 +695,42 @@
             }
         }
 
+        // 4. Portales: releer un poi/ entero es caro, así que solo se rehace si
+        // alguno de los archivos implicados ha cambiado de huella.
+        const loadersAntes = loaderSignature(world);
+        registerSidecars(world, sets.poi, sets.entities);
+        const huella = sidecarSignature(sets);
+        if (huella !== world.sidecarStamp) {
+            world.sidecarStamp = huella;
+            for (const dim of world.dimensions.values()) {
+                try {
+                    await readLoaders(dim, null);
+                } catch (e) {
+                    world.warnings.push({ file: dim.id + '/entities', msg: e.message });
+                }
+            }
+        }
+        res.loadersChanged = loadersAntes !== loaderSignature(world);
+
         return res;
+    }
+
+    /* Huella conjunta de los poi/ y entities/: si no cambia, no hay nada que releer. */
+    function sidecarSignature(sets) {
+        const h = [];
+        for (const f of sets.poi) h.push(relPath(f) + '=' + stampOf(f));
+        for (const f of sets.entities) h.push(relPath(f) + '=' + stampOf(f));
+        h.sort();
+        return h.join('|');
+    }
+
+    /* Firma comparable de los loaders, para detectar cambios en vivo. */
+    function loaderSignature(world) {
+        return JSON.stringify(
+            Array.from(world.dimensions.values()).map((d) =>
+                d.loaders.map((l) => [l.chunkX, l.chunkZ, l.kind, l.entities.length]),
+            ),
+        );
     }
 
     /*

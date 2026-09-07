@@ -49,6 +49,7 @@
             spawn: v('--spawn', '#4ade80'),
             player: v('--player', '#60a5fa'),
             forceload: v('--force', '#c084fc'),
+            loader: v('--loader', '#fb923c'),
             tickBlock: v('--warn', '#fbbf24'),
             tickBorder: v('--muted', '#93a3bd'),
         };
@@ -62,6 +63,7 @@
             spawn: [c.spawn, c.tickBlock, c.tickBorder],
             player: [c.player, c.tickBlock, c.tickBorder],
             forceload: [c.forceload, c.tickBlock, c.tickBorder],
+            loader: [c.loader, c.tickBlock, c.tickBorder],
         };
         return c;
     }

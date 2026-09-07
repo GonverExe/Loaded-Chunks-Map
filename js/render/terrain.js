@@ -10,9 +10,29 @@
     const MAX_CACHE = 80; // teselas guardadas, sumando los dos modos
     const MAX_QUEUE = 32; // regiones en cola a la vez (cola corta = reordena rápido)
 
+    /*
+     * Una región tarda medio segundo; si en veinte no ha vuelto, el worker se ha
+     * quedado colgado o ha muerto sin avisar. Sin este tope el trabajo se queda
+     * en la lista de pendientes para siempre, y con él la ruedecita girando.
+     */
+    const JOB_TIMEOUT = 20000;
+
+    /*
+     * Esperas antes de reintentar una región que ha fallado. Minecraft reescribe
+     * los .mca mientras juegas y el File que teníamos deja de valer, así que el
+     * primer fallo suele arreglarse solo; pero sin esta pausa se reintentaría en
+     * cada repintado, y una región de verdad ilegible se pediría en bucle sin fin.
+     * Pasados estos dos intentos ya solo se vuelve a probar si el juego reescribe
+     * el archivo (invalidate) o si se recarga el mundo.
+     */
+    const RETRY_WAIT = [5000, 30000];
+
     const state = {
         workers: [],
         busy: [],
+        jobs: [], // trabajo que tiene cada worker ahora mismo, o null
+        deadline: [], // hasta cuándo se le espera
+        failed: new Map(), // "rx,rz|modo" -> { intentos, hasta }
         queue: [],
         pending: new Set(), // "rx,rz|modo" en cola o en proceso
         tiles: new Map(), // "rx,rz|modo" -> ImageBitmap
@@ -28,19 +48,26 @@
         nextId: 1,
     };
 
+    function spawnWorker(i) {
+        const w = new Worker('js/workers/terrain-worker.js');
+        w.onmessage = (e) => onResult(i, e.data);
+        w.onerror = (e) => {
+            state.error = e.message || 'worker';
+            // Sin mensaje no se sabe qué región era: la saca onResult del job.
+            onResult(i, null);
+        };
+        return w;
+    }
+
     function start() {
         if (state.available !== null) return state.available;
         const n = Math.max(1, Math.min(4, (navigator.hardwareConcurrency || 2) - 1));
         try {
             for (let i = 0; i < n; i++) {
-                const w = new Worker('js/terrain-worker.js');
-                w.onmessage = (e) => onResult(i, e.data);
-                w.onerror = (e) => {
-                    state.error = e.message || 'worker';
-                    onResult(i, null);
-                };
-                state.workers.push(w);
+                state.workers.push(spawnWorker(i));
                 state.busy.push(false);
+                state.jobs.push(null);
+                state.deadline.push(0);
             }
             state.available = true;
         } catch (err) {
@@ -49,6 +76,63 @@
             state.error = err.message;
         }
         return state.available;
+    }
+
+    /*
+     * Un worker que ha petado ya no vuelve en sí: se tira y se pone otro en su
+     * hueco. Si ni eso se puede, el hueco se deja marcado como ocupado para
+     * siempre y se sigue con los que queden.
+     */
+    function restartWorker(i) {
+        try {
+            state.workers[i].terminate();
+        } catch (_) {
+            /* ya estaba muerto */
+        }
+        try {
+            state.workers[i] = spawnWorker(i);
+            state.busy[i] = false;
+        } catch (_) {
+            state.busy[i] = true;
+        }
+    }
+
+    /* Apunta que una región ha fallado y cuándo se puede volver a intentar. */
+    function noteFailure(k) {
+        const previo = state.failed.get(k);
+        const intentos = (previo ? previo.intentos : 0) + 1;
+        const espera = RETRY_WAIT[intentos - 1];
+        state.failed.set(k, {
+            intentos,
+            hasta: espera === undefined ? Infinity : Date.now() + espera,
+        });
+    }
+
+    function isFailed(k) {
+        const f = state.failed.get(k);
+        return !!f && Date.now() < f.hasta;
+    }
+
+    /*
+     * Trabajos que se han pasado de tiempo. Se dan por perdidos para que dejen de
+     * contar como pendientes (si no, su ruedecita giraría eternamente) y se
+     * reinicia el worker que los tenía.
+     */
+    function sweepStalled() {
+        const ahora = Date.now();
+        let perdidos = 0;
+        for (let i = 0; i < state.workers.length; i++) {
+            const job = state.jobs[i];
+            if (!job || ahora < state.deadline[i]) continue;
+            state.pending.delete(job.key);
+            state.done++;
+            noteFailure(job.key);
+            state.jobs[i] = null;
+            restartWorker(i);
+            perdidos++;
+        }
+        if (perdidos && state.onProgress) state.onProgress(state.done, state.total);
+        return perdidos;
     }
 
     function regionKey(rx, rz) {
@@ -81,7 +165,10 @@
     }
 
     async function onResult(slot, msg) {
+        const job = state.jobs[slot];
         state.busy[slot] = false;
+        state.jobs[slot] = null;
+
         if (msg && msg.ok) {
             const k = tileKey(msg.rx, msg.rz, msg.mode);
             try {
@@ -89,16 +176,27 @@
                 const bmp = await createImageBitmap(img);
                 state.tiles.set(k, bmp);
                 state.painted.set(k, msg.painted);
+                state.failed.delete(k);
             } catch (_) {
-                /* región ilegible: se queda sin tesela */
+                noteFailure(k); // la tesela no se pudo montar: no insistir sin más
             }
             state.pending.delete(k);
             state.done++;
             if (state.onTile) state.onTile();
-        } else if (msg) {
-            state.pending.delete(tileKey(msg.rx, msg.rz, msg.mode));
-            state.done++;
-            if (msg.error && !state.error) state.error = msg.error;
+        } else {
+            /*
+             * Fallo. Si el worker ha muerto no llega mensaje, así que la región se
+             * saca del trabajo que tenía asignado: sin esto se quedaría marcada
+             * como pendiente para siempre y su ruedecita no pararía nunca.
+             */
+            const k = msg ? tileKey(msg.rx, msg.rz, msg.mode) : job && job.key;
+            if (k) {
+                state.pending.delete(k);
+                state.done++;
+                noteFailure(k);
+            }
+            if (msg && msg.error && !state.error) state.error = msg.error;
+            if (!msg) restartWorker(slot);
         }
         if (state.onProgress) state.onProgress(state.done, state.total);
         pump();
@@ -116,6 +214,8 @@
             if (state.busy[i] || !state.queue.length) continue;
             const job = state.queue.shift();
             state.busy[i] = true;
+            state.jobs[i] = job;
+            state.deadline[i] = Date.now() + JOB_TIMEOUT;
             job.file
                 .arrayBuffer()
                 .then((buffer) => {
@@ -146,6 +246,8 @@
     function resetQueue() {
         state.queue.length = 0;
         state.pending.clear();
+        // Lo que estuviera en vuelo deja de contar: su respuesta ya no vale.
+        for (let i = 0; i < state.jobs.length; i++) state.jobs[i] = null;
         state.done = 0;
         state.total = 0;
     }
@@ -158,6 +260,7 @@
         for (const bmp of state.tiles.values()) if (bmp && bmp.close) bmp.close();
         state.tiles.clear();
         state.painted.clear();
+        state.failed.clear();
     }
 
     /* Bloques o biomas. Las teselas ya hechas de cada modo se conservan. */
@@ -180,6 +283,9 @@
      */
     function request(regions) {
         if (!state.dim || !state.dim.regions || !start()) return;
+        // Se llama en cada repintado, así que es el sitio natural para recoger
+        // los trabajos que se hayan quedado colgados.
+        const perdidos = sweepStalled();
         const m = state.mode;
         const biomeY = biomeYFor(state.dim);
         const keep = new Set();
@@ -213,7 +319,7 @@
         for (const r of regions) {
             if (state.queue.length >= MAX_QUEUE) break;
             const k = tileKey(r.rx, r.rz, m);
-            if (state.tiles.has(k) || state.pending.has(k)) continue;
+            if (state.tiles.has(k) || state.pending.has(k) || isFailed(k)) continue;
             const file = state.dim.regions.get(regionKey(r.rx, r.rz));
             if (!file) continue;
             state.pending.add(k);
@@ -223,7 +329,7 @@
         }
         if (added || dropped) state.queue.sort((x, y) => x.d - y.d);
         trimCache(keep);
-        if (added || dropped) {
+        if (added || dropped || perdidos) {
             if (state.onProgress) state.onProgress(state.done, state.total);
             pump();
         }
@@ -241,6 +347,8 @@
             if (bmp && bmp.close) bmp.close();
             state.tiles.delete(k);
             state.painted.delete(k);
+            // El archivo es nuevo: lo que fallara antes vuelve a tener su turno.
+            state.failed.delete(k);
         }
     }
 

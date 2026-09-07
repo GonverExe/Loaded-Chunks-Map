@@ -8,22 +8,18 @@
             'page.title': 'Loaded Chunks Map — mapa de chunks cargados de tu mundo de Minecraft',
             'page.description':
                 'Suelta la carpeta de tu mundo de Minecraft Java y mira qué chunks quedan cargados: spawn chunks, /forceload y el área alrededor de cada jugador. Todo en tu navegador, sin subir nada.',
-
             'settings.theme.toDark': 'Cambiar a modo oscuro',
             'settings.theme.toLight': 'Cambiar a modo claro',
             'settings.language': 'Idioma',
-
             'hero.badge': '100&nbsp;% en tu navegador · no se sube ningún archivo',
             'hero.title':
                 'Mira qué <span class="grad">chunks</span> se quedan cargados en tu mundo',
             'hero.lead':
                 'Suelta la carpeta de tu mundo de <strong>Minecraft: Java Edition</strong> (la que está dentro de <code>saves/</code>) y te dibujo el mapa: <strong>spawn chunks</strong>, chunks fijados con <code>/forceload</code> y el área que mantiene cargada cada jugador guardado, sobre el terreno que ya has generado.',
-
             'drop.title': '<strong>Arrastra aquí la carpeta del mundo</strong> o',
             'drop.pickDir': 'Elegir carpeta…',
             'drop.hint':
                 'Necesito que pases tu mundo desde dentro de la carpeta <code>saves/el nombre de tu mundo</code>.',
-
             'where.summary': '¿Dónde está mi carpeta de mundos?',
             'where.win': '<strong>Windows</strong>: <code>%appdata%\\.minecraft\\saves\\</code>',
             'where.mac':
@@ -31,28 +27,29 @@
             'where.linux': '<strong>Linux</strong>: <code>~/.minecraft/saves/</code>',
             'where.server':
                 '<strong>Servidor</strong>: la carpeta indicada en <code>level-name</code> de <code>server.properties</code> (por defecto <code>world/</code>)',
-
             'card.world': 'Mundo',
             'card.sources': 'Fuentes',
             'card.layers': 'Capas',
             'card.summary': 'Resumen',
             'card.warnings': 'Avisos',
-
             'src.spawn': 'Spawn chunks',
             'src.players': 'Jugadores',
             'src.force': '<code>/forceload</code>',
+            'src.loaders': 'Chunk loaders',
             'ctl.spawnRadius': 'Radio:',
             'ctl.simDist': 'Dist. simulación:',
+            'ctl.loaderRadius': 'Radio:',
             'ctl.chunksGrid': '{n} → {side}×{side} chunks',
             'note.playersClosed': 'Mundo cerrado: un jugador desconectado no carga chunks.',
             'note.simDist': 'No se guarda en el mundo: ponla como en tu partida.',
+            'note.loaderNone': 'No he encontrado ninguno. Solo se pueden ver los que dejan rastro en el save: una perla de ender en vuelo o algo parado sobre un portal.',
+            'note.loaderFound': '{n} encontrados ({pearls} por perla, {portals} sobre un portal). El ticket que los mantiene no se guarda en el mundo: esto es una reconstrucción.',
             'spawn.gamerule': '{version} · <code>spawnChunkRadius = {r}</code> → {side}×{side} con entity ticking.',
             'spawn.classic': '{version} · sin <code>spawnChunkRadius</code> (llegó en 1.20.5): clásico, 19×19 con entity ticking.',
             'spawn.disabled': '{version} · <code>spawnChunkRadius = 0</code>: sin spawn chunks.',
             'spawn.removed': '{version} · los spawn chunks se quitaron en 1.21.9: este mundo no tiene.',
             'spawn.manual': 'Radio a mano',
             'spawn.manualNote': 'A mano: {side}×{side} con entity ticking.',
-
             'mode.blocks': 'Bloques',
             'mode.biomes': 'Biomas',
             'terrain.rendering': 'Renderizando terreno… {done}/{total} regiones',
@@ -61,20 +58,17 @@
             'layer.loaded': 'Cargados',
             'layer.markers': 'Marcadores',
             'layer.grid': 'Rejilla',
-
             'btn.reset': 'Otro mundo',
-            'btn.fit': 'Encajar vista',
+            'btn.goto': 'Ir a…',
             'btn.gotoSpawn': 'Ir al spawn',
-            'btn.gotoPlayer': 'Ir a jugador…',
             'btn.png': 'Exportar PNG',
-
             'live.open': 'Mundo abierto',
             'live.closed': 'Mundo cerrado',
             'live.waiting': 'Mirando la carpeta…',
             'live.lastWrite': 'última escritura {t}',
             'live.neverWrite': 'sin escrituras todavía',
             'live.nofolder': 'Para seguir el mundo en vivo, cárgalo con «Elegir carpeta…» en Chrome, Edge u Opera.',
-            'live.next': 'Actualizando en {s} s',
+            'live.next': 'Actualizando en {t}',
             'live.checking': 'Buscando cambios…',
             'live.note':
                 'Minecraft solo escribe en disco al autoguardar (unos 5 min) y al salir del mundo: entre volcado y volcado no hay nada nuevo que leer.',
@@ -86,6 +80,7 @@
             'live.changed': '{chunks} chunks nuevos',
             'live.moved': 'jugadores movidos',
             'live.forced': 'forceload cambiado',
+            'live.loaders': 'loaders cambiados',
             'live.version': 'versión o gamerule cambiada',
             'live.at': 'Última comprobación: {time}',
             'btn.structures': 'Estructuras',
@@ -96,7 +91,6 @@
             'struct.unavailable':
                 'Las estructuras necesitan Web Workers, igual que el mapa del mundo.',
             'tip.structures': 'Estructuras aquí:',
-
             'struct.village': 'Aldea',
             'struct.pillager_outpost': 'Puesto de saqueadores',
             'struct.mineshaft': 'Mina abandonada',
@@ -119,25 +113,20 @@
             'struct.nether_fossil': 'Fósil del Nether',
             'struct.end_city': 'Ciudad del End',
             'struct.other': 'Otras',
-
             'legend.spawn': 'spawn',
             'legend.player': 'jugador',
             'legend.force': 'forceload',
+            'legend.loader': 'loader',
             'legend.generated': 'generado',
             'legend.terrain': 'mapa',
             'legend.border': 'world border',
-
-            'disclaimer':
-                'Un save <strong>no guarda</strong> qué chunks estaban cargados en memoria: esto es una reconstrucción de los <em>tickets</em> que existirían al arrancar el mundo con los ajustes de la izquierda. Los chunks mantenidos por perlas de ender, portales o mods no aparecen.',
-
+            'disclaimer': 'Un save <strong>no guarda</strong> qué chunks estaban cargados en memoria: esto es una reconstrucción de los <em>tickets</em> que existirían al arrancar el mundo con los ajustes de la izquierda. De los chunk loaders solo salen los que dejan rastro en el disco: una perla de ender en vuelo o algo parado sobre un portal. Los de mods no aparecen.',
             'loading.reading': 'Leyendo el mundo…',
             'loading.walking': 'Recorriendo la carpeta…',
             'loading.file': 'Leyendo {file} ({done}/{total})',
-
             'info.name': 'Nombre',
             'info.version': 'Versión',
             'info.lastPlayed': 'Última partida',
-
             'stats.loaded': 'Cargados',
             'stats.entity': '· entity ticking',
             'stats.ticking': '· block ticking',
@@ -145,22 +134,21 @@
             'stats.generated': 'Generados',
             'stats.regionFiles': 'Region files',
             'stats.forceload': 'Forceload',
+            'stats.loaders': 'Chunk loaders',
             'stats.playersHere': 'Jugadores aquí',
             'stats.ratio': 'Cargados / generados',
             'stats.stalePlayers': 'No presentes',
-
             'dim.option': '{label} · {n} generados',
-
             'level.0': 'entity ticking',
             'level.1': 'block ticking',
             'level.2': 'borde (cargado, sin tick)',
-
             'detail.spawn': 'spawn del mundo en {x}, {z}',
             'detail.player': '{name} en {x}, {z}',
             'detail.force': 'chunk forzado {x}, {z}',
+            'detail.loaderPortal': 'loader de portal en {x}, {z} · {n} entidad(es)',
+            'detail.loaderPearl': 'perla de ender en {x}, {z}',
             'player.label': 'Jugador',
             'player.singleplayer': 'Jugador (level.dat)',
-
             'tip.chunk': 'Chunk {x}, {z}',
             'tip.blocks': 'Bloques {x1}, {z1} → {x2}, {z2}',
             'tip.region': 'Región r.{rx}.{rz}.mca',
@@ -170,16 +158,13 @@
             'tip.ungenerated': 'Sin generar',
             'tip.regionReadAt': 'Región leída · guardado {date}',
             'tip.regionRead': 'Región leída, sin generar',
-
             'map.scale': '{chunks} chunks · {blocks} bloques',
             'map.empty': 'Carga la carpeta de tu mundo para ver el mapa',
-
             'error.noWorld':
                 'No he encontrado ni level.dat ni carpeta region/. ¿Seguro que es la carpeta de un mundo (la que está dentro de saves/)?',
             'error.noDecompression':
                 'Este navegador no soporta DecompressionStream (necesario para leer los .dat).',
             'warn.read': 'No he podido leer {file}: {msg}',
-
             'explain.title': 'Qué se puede saber de verdad desde la carpeta',
             'explain.spawn.h': 'Spawn chunks',
             'explain.spawn.p':
@@ -193,8 +178,7 @@
             'explain.terrain.h': 'Terreno generado',
             'explain.terrain.p':
                 'De cada <code>region/r.X.Z.mca</code> leo la cabecera para saber qué chunks existen y cuándo se guardaron. Con la capa de terreno activada leo además los bloques de las regiones que estás mirando y dibujo el mapa del mundo, al estilo de MCA Selector: se toma el bloque de superficie de cada columna, se colorea y se sombrea según el desnivel. También puedes verlo como <strong>mapa de biomas</strong>, con un color plano por bioma, en cualquier dimensión.',
-            'explain.fine':
-                'Los llamados <em>chunk loaders</em> hechos con perlas de ender, portales del Nether o mods dependen del estado en ejecución del servidor y no quedan escritos en el save, así que no se pueden reconstruir desde aquí.',
+            'explain.fine': 'En vanilla lo único que carga chunks es el spawn, los jugadores, <code>/forceload</code>, el ticket que crea un portal cuando algo lo cruza y la perla de ender mientras vuela. Los hoppers, los relojes de redstone y las granjas no cargan nada: solo funcionan si el chunk ya está cargado por otro motivo. De todo eso, en el disco no queda ni un ticket, así que los <em>chunk loaders</em> se deducen de la entidad que los provoca; los de mods dependen del servidor en marcha y no dejan ni rastro.',
             'foot': 'Todo el procesado ocurre en tu navegador: los archivos nunca salen de tu ordenador.',
         },
 
@@ -204,21 +188,17 @@
                 'Loaded Chunks Map — see which chunks stay loaded in your Minecraft world',
             'page.description':
                 'Drop your Minecraft Java world folder and see which chunks stay loaded: spawn chunks, /forceload and the area around each player. All in your browser, nothing uploaded.',
-
             'settings.theme.toDark': 'Switch to dark mode',
             'settings.theme.toLight': 'Switch to light mode',
             'settings.language': 'Language',
-
             'hero.badge': '100&nbsp;% in your browser · nothing gets uploaded',
             'hero.title': 'See which <span class="grad">chunks</span> stay loaded in your world',
             'hero.lead':
                 'Drop your <strong>Minecraft: Java Edition</strong> world folder (the one inside <code>saves/</code>) and I will draw the map: <strong>spawn chunks</strong>, chunks pinned with <code>/forceload</code> and the area each saved player keeps loaded, on top of the terrain you have already generated.',
-
             'drop.title': '<strong>Drop the world folder here</strong> or',
             'drop.pickDir': 'Choose folder…',
             'drop.hint':
                 'Give me the world folder itself, the one inside <code>saves/your world name</code>.',
-
             'where.summary': 'Where is my saves folder?',
             'where.win': '<strong>Windows</strong>: <code>%appdata%\\.minecraft\\saves\\</code>',
             'where.mac':
@@ -226,28 +206,29 @@
             'where.linux': '<strong>Linux</strong>: <code>~/.minecraft/saves/</code>',
             'where.server':
                 '<strong>Server</strong>: the folder named by <code>level-name</code> in <code>server.properties</code> (<code>world/</code> by default)',
-
             'card.world': 'World',
             'card.sources': 'Sources',
             'card.layers': 'Layers',
             'card.summary': 'Summary',
             'card.warnings': 'Warnings',
-
             'src.spawn': 'Spawn chunks',
             'src.players': 'Players',
             'src.force': '<code>/forceload</code>',
+            'src.loaders': 'Chunk loaders',
             'ctl.spawnRadius': 'Radius:',
             'ctl.simDist': 'Sim. distance:',
+            'ctl.loaderRadius': 'Radius:',
             'ctl.chunksGrid': '{n} → {side}×{side} chunks',
             'note.playersClosed': 'World closed: a disconnected player loads no chunks.',
             'note.simDist': 'Not stored in the world: match your game.',
+            'note.loaderNone': 'None found. Only the ones that leave a trace in the save can be seen: an ender pearl in flight, or something sitting on a portal.',
+            'note.loaderFound': '{n} found ({pearls} by pearl, {portals} on a portal). The ticket that keeps them alive is not stored in the world: this is a reconstruction.',
             'spawn.gamerule': '{version} · <code>spawnChunkRadius = {r}</code> → {side}×{side} entity-ticking chunks.',
             'spawn.classic': '{version} · no <code>spawnChunkRadius</code> (added in 1.20.5): classic behaviour, 19×19 entity-ticking chunks.',
             'spawn.disabled': '{version} · <code>spawnChunkRadius = 0</code>: no spawn chunks.',
             'spawn.removed': '{version} · spawn chunks were removed in 1.21.9: this world has none.',
             'spawn.manual': 'Radius by hand',
             'spawn.manualNote': 'By hand: {side}×{side} entity-ticking chunks.',
-
             'mode.blocks': 'Blocks',
             'mode.biomes': 'Biomes',
             'terrain.rendering': 'Rendering terrain… {done}/{total} regions',
@@ -256,20 +237,17 @@
             'layer.loaded': 'Loaded',
             'layer.markers': 'Markers',
             'layer.grid': 'Grid',
-
             'btn.reset': 'Another world',
-            'btn.fit': 'Fit view',
+            'btn.goto': 'Go to…',
             'btn.gotoSpawn': 'Go to spawn',
-            'btn.gotoPlayer': 'Go to player…',
             'btn.png': 'Export PNG',
-
             'live.open': 'World open',
             'live.closed': 'World closed',
             'live.waiting': 'Checking the folder…',
             'live.lastWrite': 'last write {t}',
             'live.neverWrite': 'no writes yet',
             'live.nofolder': 'To follow the world live, load it with “Choose folder…” in Chrome, Edge or Opera.',
-            'live.next': 'Updating in {s} s',
+            'live.next': 'Updating in {t}',
             'live.checking': 'Looking for changes…',
             'live.note':
                 'Minecraft only writes to disk on autosave (about every 5 min) and when you leave the world: between saves there is nothing new to read.',
@@ -281,6 +259,7 @@
             'live.changed': '{chunks} new chunks',
             'live.moved': 'players moved',
             'live.forced': 'forceload changed',
+            'live.loaders': 'loaders changed',
             'live.version': 'version or gamerule changed',
             'live.at': 'Last check: {time}',
             'btn.structures': 'Structures',
@@ -290,7 +269,6 @@
             'struct.scanning': 'Searching structures… {done}/{total} regions',
             'struct.unavailable': 'Structures need Web Workers, same as the world map.',
             'tip.structures': 'Structures here:',
-
             'struct.village': 'Village',
             'struct.pillager_outpost': 'Pillager outpost',
             'struct.mineshaft': 'Abandoned mineshaft',
@@ -313,25 +291,20 @@
             'struct.nether_fossil': 'Nether fossil',
             'struct.end_city': 'End city',
             'struct.other': 'Other',
-
             'legend.spawn': 'spawn',
             'legend.player': 'player',
             'legend.force': 'forceload',
+            'legend.loader': 'loader',
             'legend.generated': 'generated',
             'legend.terrain': 'map',
             'legend.border': 'world border',
-
-            'disclaimer':
-                'A save <strong>does not store</strong> which chunks were loaded in memory: this is a reconstruction of the <em>tickets</em> that would exist when the world starts with the settings on the left. Chunks kept alive by ender pearls, portals or mods do not show up.',
-
+            'disclaimer': 'A save <strong>does not store</strong> which chunks were loaded in memory: this is a reconstruction of the <em>tickets</em> that would exist when starting the world with the settings on the left. Of the chunk loaders, only the ones that leave a trace on disk show up: an ender pearl in flight, or something sitting on a portal. Modded ones do not.',
             'loading.reading': 'Reading the world…',
             'loading.walking': 'Walking the folder…',
             'loading.file': 'Reading {file} ({done}/{total})',
-
             'info.name': 'Name',
             'info.version': 'Version',
             'info.lastPlayed': 'Last played',
-
             'stats.loaded': 'Loaded',
             'stats.entity': '· entity ticking',
             'stats.ticking': '· block ticking',
@@ -339,22 +312,21 @@
             'stats.generated': 'Generated',
             'stats.regionFiles': 'Region files',
             'stats.forceload': 'Forceload',
+            'stats.loaders': 'Chunk loaders',
             'stats.playersHere': 'Players here',
             'stats.ratio': 'Loaded / generated',
             'stats.stalePlayers': 'Not present',
-
             'dim.option': '{label} · {n} generated',
-
             'level.0': 'entity ticking',
             'level.1': 'block ticking',
             'level.2': 'border (loaded, no ticking)',
-
             'detail.spawn': 'world spawn at {x}, {z}',
             'detail.player': '{name} at {x}, {z}',
             'detail.force': 'forced chunk {x}, {z}',
+            'detail.loaderPortal': 'portal loader at {x}, {z} · {n} entity(ies)',
+            'detail.loaderPearl': 'ender pearl at {x}, {z}',
             'player.label': 'Player',
             'player.singleplayer': 'Player (level.dat)',
-
             'tip.chunk': 'Chunk {x}, {z}',
             'tip.blocks': 'Blocks {x1}, {z1} → {x2}, {z2}',
             'tip.region': 'Region r.{rx}.{rz}.mca',
@@ -364,16 +336,13 @@
             'tip.ungenerated': 'Not generated',
             'tip.regionReadAt': 'Region read · saved {date}',
             'tip.regionRead': 'Region read, not generated',
-
             'map.scale': '{chunks} chunks · {blocks} blocks',
             'map.empty': 'Load your world folder to see the map',
-
             'error.noWorld':
                 'I found neither level.dat nor a region/ folder. Is this really a world folder (the one inside saves/)?',
             'error.noDecompression':
                 'This browser does not support DecompressionStream (needed to read the .dat files).',
             'warn.read': 'Could not read {file}: {msg}',
-
             'explain.title': 'What the folder can actually tell you',
             'explain.spawn.h': 'Spawn chunks',
             'explain.spawn.p':
@@ -387,8 +356,7 @@
             'explain.terrain.h': 'Generated terrain',
             'explain.terrain.p':
                 'From each <code>region/r.X.Z.mca</code> I read the header to know which chunks exist and when they were saved. With the terrain layer on I also read the blocks of the regions you are looking at and draw the world map, in the style of MCA Selector: the surface block of each column, coloured and shaded by slope. You can also switch it to a <strong>biome map</strong>, one flat colour per biome, in any dimension.',
-            'explain.fine':
-                'So-called <em>chunk loaders</em> built with ender pearls, Nether portals or mods depend on the running server state and are never written to the save, so they cannot be reconstructed here.',
+            'explain.fine': 'In vanilla the only things that load chunks are the spawn, players, <code>/forceload</code>, the ticket a portal creates when something crosses it, and an ender pearl while it flies. Hoppers, redstone clocks and farms load nothing: they only run if the chunk is already loaded for some other reason. None of that leaves a ticket on disk, so <em>chunk loaders</em> are inferred from the entity behind them; modded ones depend on the running server and leave no trace at all.',
             'foot': 'Everything is processed in your browser: the files never leave your computer.',
         },
 
@@ -425,18 +393,21 @@
             'src.spawn': 'Spawn chunks',
             'src.players': 'Jogadores',
             'src.force': '<code>/forceload</code>',
+            'src.loaders': 'Chunk loaders',
             'ctl.spawnRadius': 'Raio:',
             'ctl.simDist': 'Dist. simulação:',
+            'ctl.loaderRadius': 'Raio:',
             'ctl.chunksGrid': '{n} → {side}×{side} chunks',
             'note.playersClosed': 'Mundo fechado: um jogador desconectado não carrega chunks.',
             'note.simDist': 'Não fica salva no mundo: ajuste para a da sua partida.',
+            'note.loaderNone': 'Nenhum encontrado. Só dá para ver os que deixam rastro no save: uma pérola do end em voo ou algo parado sobre um portal.',
+            'note.loaderFound': '{n} encontrados ({pearls} por pérola, {portals} sobre um portal). O ticket que os mantém não fica salvo no mundo: isto é uma reconstrução.',
             'spawn.gamerule': '{version} · <code>spawnChunkRadius = {r}</code> → {side}×{side} com entity ticking.',
             'spawn.classic': '{version} · sem <code>spawnChunkRadius</code> (veio na 1.20.5): clássico, 19×19 com entity ticking.',
             'spawn.disabled': '{version} · <code>spawnChunkRadius = 0</code>: sem spawn chunks.',
             'spawn.removed': '{version} · os spawn chunks foram removidos na 1.21.9: este mundo não tem.',
             'spawn.manual': 'Raio na mão',
             'spawn.manualNote': 'Na mão: {side}×{side} com entity ticking.',
-
             'mode.blocks': 'Blocos',
             'mode.biomes': 'Biomas',
             'terrain.rendering': 'Renderizando terreno… {done}/{total} regiões',
@@ -446,18 +417,16 @@
             'layer.markers': 'Marcadores',
             'layer.grid': 'Grade',
             'btn.reset': 'Outro mundo',
-            'btn.fit': 'Ajustar visão',
+            'btn.goto': 'Ir para…',
             'btn.gotoSpawn': 'Ir ao spawn',
-            'btn.gotoPlayer': 'Ir ao jogador…',
             'btn.png': 'Exportar PNG',
-
             'live.open': 'Mundo aberto',
             'live.closed': 'Mundo fechado',
             'live.waiting': 'Olhando a pasta…',
             'live.lastWrite': 'última gravação {t}',
             'live.neverWrite': 'ainda sem gravações',
             'live.nofolder': 'Para acompanhar o mundo ao vivo, carregue-o com “Escolher pasta…” no Chrome, Edge ou Opera.',
-            'live.next': 'Atualizando em {s} s',
+            'live.next': 'Atualizando em {t}',
             'live.checking': 'Procurando mudanças…',
             'live.note':
                 'O Minecraft só grava no disco no salvamento automático (cerca de 5 min) e ao sair do mundo: entre um salvamento e outro não há nada novo para ler.',
@@ -469,6 +438,7 @@
             'live.changed': '{chunks} chunks novos',
             'live.moved': 'jogadores se moveram',
             'live.forced': 'forceload mudou',
+            'live.loaders': 'loaders alterados',
             'live.version': 'versão ou gamerule mudou',
             'live.at': 'Última verificação: {time}',
             'btn.structures': 'Estruturas',
@@ -478,7 +448,6 @@
             'struct.scanning': 'Procurando estruturas… {done}/{total} regiões',
             'struct.unavailable': 'As estruturas precisam de Web Workers, igual ao mapa do mundo.',
             'tip.structures': 'Estruturas aqui:',
-
             'struct.village': 'Vila',
             'struct.pillager_outpost': 'Posto avançado de saqueadores',
             'struct.mineshaft': 'Mina abandonada',
@@ -504,11 +473,11 @@
             'legend.spawn': 'spawn',
             'legend.player': 'jogador',
             'legend.force': 'forceload',
+            'legend.loader': 'loader',
             'legend.generated': 'gerado',
             'legend.terrain': 'mapa',
             'legend.border': 'world border',
-            'disclaimer':
-                'Um save <strong>não guarda</strong> quais chunks estavam carregados na memória: isto é uma reconstrução dos <em>tickets</em> que existiriam ao iniciar o mundo com os ajustes da esquerda. Chunks mantidos por pérolas do end, portais ou mods não aparecem.',
+            'disclaimer': 'Um save <strong>não guarda</strong> quais chunks estavam carregados na memória: isto é uma reconstrução dos <em>tickets</em> que existiriam ao abrir o mundo com os ajustes da esquerda. Dos chunk loaders só aparecem os que deixam rastro no disco: uma pérola do end em voo ou algo parado sobre um portal. Os de mods não aparecem.',
             'loading.reading': 'Lendo o mundo…',
             'loading.walking': 'Percorrendo a pasta…',
             'loading.file': 'Lendo {file} ({done}/{total})',
@@ -522,6 +491,7 @@
             'stats.generated': 'Gerados',
             'stats.regionFiles': 'Region files',
             'stats.forceload': 'Forceload',
+            'stats.loaders': 'Chunk loaders',
             'stats.playersHere': 'Jogadores aqui',
             'stats.ratio': 'Carregados / gerados',
             'stats.stalePlayers': 'Ausentes',
@@ -532,6 +502,8 @@
             'detail.spawn': 'spawn do mundo em {x}, {z}',
             'detail.player': '{name} em {x}, {z}',
             'detail.force': 'chunk fixado {x}, {z}',
+            'detail.loaderPortal': 'loader de portal em {x}, {z} · {n} entidade(s)',
+            'detail.loaderPearl': 'pérola do end em {x}, {z}',
             'player.label': 'Jogador',
             'player.singleplayer': 'Jogador (level.dat)',
             'tip.chunk': 'Chunk {x}, {z}',
@@ -563,8 +535,7 @@
             'explain.terrain.h': 'Terreno gerado',
             'explain.terrain.p':
                 'De cada <code>region/r.X.Z.mca</code> leio o cabeçalho para saber quais chunks existem e quando foram salvos. Com a camada de terreno ligada também leio os blocos das regiões que você está vendo e desenho o mapa do mundo, no estilo do MCA Selector: o bloco de superfície de cada coluna, colorido e sombreado pelo desnível. Também dá para ver como <strong>mapa de biomas</strong>, com uma cor sólida por bioma, em qualquer dimensão.',
-            'explain.fine':
-                'Os chamados <em>chunk loaders</em> feitos com pérolas do end, portais do Nether ou mods dependem do estado do servidor em execução e não ficam gravados no save, então não dá para reconstruí-los aqui.',
+            'explain.fine': 'No vanilla, a única coisa que carrega chunks é o spawn, os jogadores, o <code>/forceload</code>, o ticket que um portal cria quando algo o atravessa e a pérola do end enquanto voa. Hoppers, relógios de redstone e granjas não carregam nada: só funcionam se o chunk já estiver carregado por outro motivo. Nada disso deixa ticket no disco, então os <em>chunk loaders</em> são deduzidos da entidade por trás deles; os de mods dependem do servidor em execução e não deixam rastro nenhum.',
             'foot': 'Todo o processamento acontece no seu navegador: os arquivos nunca saem do seu computador.',
         },
 
@@ -599,18 +570,21 @@
             'src.spawn': '出生点区块',
             'src.players': '玩家',
             'src.force': '<code>/forceload</code>',
+            'src.loaders': '区块加载器',
             'ctl.spawnRadius': '半径：',
             'ctl.simDist': '模拟距离：',
+            'ctl.loaderRadius': '半径：',
             'ctl.chunksGrid': '{n} → {side}×{side} 区块',
             'note.playersClosed': '世界已关闭：断线玩家不加载区块。',
             'note.simDist': '世界里不保存：请填你游戏中的数值。',
+            'note.loaderNone': '没有找到。只能看到在存档里留下痕迹的那些：飞行中的末影珍珠，或者停在传送门上的实体。',
+            'note.loaderFound': '找到 {n} 个（{pearls} 个靠珍珠，{portals} 个在传送门上）。维持它们的 ticket 不会保存在世界里：这是推算结果。',
             'spawn.gamerule': '{version} · <code>spawnChunkRadius = {r}</code> → {side}×{side} 个 entity ticking 区块。',
             'spawn.classic': '{version} · 无 <code>spawnChunkRadius</code>（1.20.5 才加入）：经典行为，19×19 个 entity ticking 区块。',
             'spawn.disabled': '{version} · <code>spawnChunkRadius = 0</code>：没有出生点区块。',
             'spawn.removed': '{version} · 出生点区块在 1.21.9 已移除：此世界没有。',
             'spawn.manual': '手动设置半径',
             'spawn.manualNote': '手动：{side}×{side} 个 entity ticking 区块。',
-
             'mode.blocks': '方块',
             'mode.biomes': '生物群系',
             'terrain.rendering': '正在渲染地形… {done}/{total} 个区域',
@@ -620,18 +594,16 @@
             'layer.markers': '标记',
             'layer.grid': '网格',
             'btn.reset': '其他世界',
-            'btn.fit': '适应视图',
+            'btn.goto': '前往…',
             'btn.gotoSpawn': '前往出生点',
-            'btn.gotoPlayer': '前往玩家…',
             'btn.png': '导出 PNG',
-
             'live.open': '世界已打开',
             'live.closed': '世界已关闭',
             'live.waiting': '正在查看文件夹…',
             'live.lastWrite': '最后写入{t}',
             'live.neverWrite': '尚无写入',
             'live.nofolder': '要实时跟踪世界，请在 Chrome、Edge 或 Opera 中用“选择文件夹…”加载它。',
-            'live.next': '{s} 秒后更新',
+            'live.next': '{t}后更新',
             'live.checking': '正在查找变化…',
             'live.note':
                 'Minecraft 只在自动保存（约每 5 分钟）和离开世界时写入磁盘：两次保存之间没有新内容可读。',
@@ -642,6 +614,7 @@
             'live.changed': '{chunks} 个新区块',
             'live.moved': '玩家已移动',
             'live.forced': 'forceload 已更改',
+            'live.loaders': '加载器有变化',
             'live.version': '版本或游戏规则已更改',
             'live.at': '上次检查：{time}',
             'btn.structures': '结构',
@@ -650,7 +623,6 @@
             'struct.scanning': '正在搜索结构… {done}/{total} 个区域',
             'struct.unavailable': '结构需要 Web Worker，和世界地图一样。',
             'tip.structures': '此处的结构：',
-
             'struct.village': '村庄',
             'struct.pillager_outpost': '掠夺者前哨站',
             'struct.mineshaft': '废弃矿井',
@@ -676,11 +648,11 @@
             'legend.spawn': '出生点',
             'legend.player': '玩家',
             'legend.force': 'forceload',
+            'legend.loader': 'loader',
             'legend.generated': '已生成',
             'legend.terrain': '地图',
             'legend.border': '世界边界',
-            'disclaimer':
-                '存档<strong>不会保存</strong>当时内存里加载了哪些区块：这里显示的是按左侧设置启动世界时会存在的<em>票据（ticket）</em>的重建结果。由末影珍珠、传送门或模组保持加载的区块不会出现。',
+            'disclaimer': '存档<strong>不会保存</strong>哪些区块曾在内存里加载：这里显示的是按左侧设置启动世界时会存在的 <em>ticket</em> 的推算结果。区块加载器只显示那些在磁盘上留下痕迹的：飞行中的末影珍珠，或停在传送门上的实体。模组的不会出现。',
             'loading.reading': '正在读取世界…',
             'loading.walking': '正在遍历文件夹…',
             'loading.file': '正在读取 {file}（{done}/{total}）',
@@ -694,6 +666,7 @@
             'stats.generated': '已生成',
             'stats.regionFiles': '区域文件',
             'stats.forceload': 'Forceload',
+            'stats.loaders': '区块加载器',
             'stats.playersHere': '此维度玩家',
             'stats.ratio': '已加载 / 已生成',
             'stats.stalePlayers': '不在场',
@@ -704,6 +677,8 @@
             'detail.spawn': '世界出生点 {x}, {z}',
             'detail.player': '{name} 位于 {x}, {z}',
             'detail.force': '强制加载的区块 {x}, {z}',
+            'detail.loaderPortal': '{x}, {z} 的传送门加载器 · {n} 个实体',
+            'detail.loaderPearl': '{x}, {z} 的末影珍珠',
             'player.label': '玩家',
             'player.singleplayer': '玩家（level.dat）',
             'tip.chunk': '区块 {x}, {z}',
@@ -734,8 +709,7 @@
             'explain.terrain.h': '已生成的地形',
             'explain.terrain.p':
                 '每个 <code>region/r.X.Z.mca</code> 我都会读取文件头，知道哪些区块存在、上次保存于何时。打开地形图层后，我还会读取你正在查看的区域的方块并绘制世界地图，风格类似 MCA Selector：取每一列的表面方块，上色并按高低差添加阴影。你也可以切换到<strong>生物群系地图</strong>，每个生物群系一种纯色，任意维度都可用。',
-            'explain.fine':
-                '用末影珍珠、下界传送门或模组做的所谓<em>区块加载器</em>依赖服务器运行时的状态，不会写入存档，因此无法在这里重建。',
+            'explain.fine': '在原版里，只有出生点、玩家、<code>/forceload</code>、实体穿过传送门时产生的 ticket，以及飞行中的末影珍珠会加载区块。漏斗、红石时钟和农场什么都不加载：它们只有在区块已经因别的原因被加载时才会运行。这些都不会在磁盘上留下 ticket，所以<em>区块加载器</em>是根据背后的实体推算出来的；模组的取决于运行中的服务器，完全不留痕迹。',
             'foot': '所有处理都在你的浏览器中完成：文件不会离开你的电脑。',
         },
 
@@ -771,18 +745,21 @@
             'src.spawn': 'Спавн-чанки',
             'src.players': 'Игроки',
             'src.force': '<code>/forceload</code>',
+            'src.loaders': 'Чанклоадеры',
             'ctl.spawnRadius': 'Радиус:',
             'ctl.simDist': 'Дист. симуляции:',
+            'ctl.loaderRadius': 'Радиус:',
             'ctl.chunksGrid': '{n} → {side}×{side} чанков',
             'note.playersClosed': 'Мир закрыт: отключившийся игрок не грузит чанки.',
             'note.simDist': 'В мире не хранится: укажите как в вашей игре.',
+            'note.loaderNone': 'Не найдено ни одного. Видно только те, что оставляют след в сохранении: эндер-жемчуг в полёте или сущность на портале.',
+            'note.loaderFound': 'Найдено: {n} ({pearls} по жемчугу, {portals} на портале). Тикет, который их держит, в мире не хранится: это реконструкция.',
             'spawn.gamerule': '{version} · <code>spawnChunkRadius = {r}</code> → {side}×{side} чанков с entity ticking.',
             'spawn.classic': '{version} · без <code>spawnChunkRadius</code> (с 1.20.5): классика, 19×19 чанков с entity ticking.',
             'spawn.disabled': '{version} · <code>spawnChunkRadius = 0</code>: спавн-чанков нет.',
             'spawn.removed': '{version} · спавн-чанки убрали в 1.21.9: в этом мире их нет.',
             'spawn.manual': 'Радиус вручную',
             'spawn.manualNote': 'Вручную: {side}×{side} чанков с entity ticking.',
-
             'mode.blocks': 'Блоки',
             'mode.biomes': 'Биомы',
             'terrain.rendering': 'Отрисовка рельефа… {done}/{total} регионов',
@@ -792,18 +769,16 @@
             'layer.markers': 'Маркеры',
             'layer.grid': 'Сетка',
             'btn.reset': 'Другой мир',
-            'btn.fit': 'Вписать в экран',
+            'btn.goto': 'Перейти к…',
             'btn.gotoSpawn': 'К спавну',
-            'btn.gotoPlayer': 'К игроку…',
             'btn.png': 'Экспорт PNG',
-
             'live.open': 'Мир открыт',
             'live.closed': 'Мир закрыт',
             'live.waiting': 'Смотрю папку…',
             'live.lastWrite': 'последняя запись {t}',
             'live.neverWrite': 'записей пока нет',
             'live.nofolder': 'Чтобы следить за миром вживую, загрузите его через «Выбрать папку…» в Chrome, Edge или Opera.',
-            'live.next': 'Обновление через {s} с',
+            'live.next': 'Обновление через {t}',
             'live.checking': 'Поиск изменений…',
             'live.note':
                 'Minecraft пишет на диск только при автосохранении (примерно раз в 5 минут) и при выходе из мира: между сохранениями читать нечего.',
@@ -815,6 +790,7 @@
             'live.changed': 'новых чанков: {chunks}',
             'live.moved': 'игроки переместились',
             'live.forced': 'forceload изменён',
+            'live.loaders': 'чанклоадеры изменились',
             'live.version': 'версия или геймрул изменились',
             'live.at': 'Последняя проверка: {time}',
             'btn.structures': 'Структуры',
@@ -824,7 +800,6 @@
             'struct.scanning': 'Поиск структур… {done}/{total} регионов',
             'struct.unavailable': 'Для структур нужны Web Workers, как и для карты мира.',
             'tip.structures': 'Структуры здесь:',
-
             'struct.village': 'Деревня',
             'struct.pillager_outpost': 'Аванпост разбойников',
             'struct.mineshaft': 'Заброшенная шахта',
@@ -850,11 +825,11 @@
             'legend.spawn': 'спавн',
             'legend.player': 'игрок',
             'legend.force': 'forceload',
+            'legend.loader': 'loader',
             'legend.generated': 'сгенерировано',
             'legend.terrain': 'карта',
             'legend.border': 'граница мира',
-            'disclaimer':
-                'Сохранение <strong>не хранит</strong>, какие чанки были загружены в памяти: здесь показана реконструкция <em>тикетов</em>, которые существовали бы при запуске мира с настройками слева. Чанки, удерживаемые эндер-жемчугом, порталами или модами, не показываются.',
+            'disclaimer': 'Сохранение <strong>не хранит</strong>, какие чанки были загружены в память: это реконструкция <em>тикетов</em>, которые появились бы при запуске мира с настройками слева. Из чанклоадеров показываются только те, что оставляют след на диске: эндер-жемчуг в полёте или сущность на портале. Модовые не показываются.',
             'loading.reading': 'Чтение мира…',
             'loading.walking': 'Обход папки…',
             'loading.file': 'Чтение {file} ({done}/{total})',
@@ -868,6 +843,7 @@
             'stats.generated': 'Сгенерировано',
             'stats.regionFiles': 'Файлы регионов',
             'stats.forceload': 'Forceload',
+            'stats.loaders': 'Чанклоадеры',
             'stats.playersHere': 'Игроков здесь',
             'stats.ratio': 'Загружено / сгенерировано',
             'stats.stalePlayers': 'Не в мире',
@@ -878,6 +854,8 @@
             'detail.spawn': 'спавн мира на {x}, {z}',
             'detail.player': '{name} на {x}, {z}',
             'detail.force': 'принудительно загруженный чанк {x}, {z}',
+            'detail.loaderPortal': 'портальный лоадер в {x}, {z} · сущностей: {n}',
+            'detail.loaderPearl': 'эндер-жемчуг в {x}, {z}',
             'player.label': 'Игрок',
             'player.singleplayer': 'Игрок (level.dat)',
             'tip.chunk': 'Чанк {x}, {z}',
@@ -909,8 +887,7 @@
             'explain.terrain.h': 'Сгенерированная местность',
             'explain.terrain.p':
                 'Из каждого <code>region/r.X.Z.mca</code> я читаю заголовок: какие чанки существуют и когда их сохранили. С включённым слоем рельефа я также читаю блоки регионов, которые вы смотрите, и рисую карту мира в стиле MCA Selector: берётся поверхностный блок каждой колонки, раскрашивается и затеняется по перепаду высот. Можно переключиться и на <strong>карту биомов</strong> — по одному цвету на биом, в любом измерении.',
-            'explain.fine':
-                'Так называемые <em>чанклоадеры</em> из эндер-жемчуга, порталов Нижнего мира или модов зависят от состояния запущенного сервера и не записываются в сохранение, поэтому восстановить их здесь нельзя.',
+            'explain.fine': 'В ванили чанки грузят только спавн, игроки, <code>/forceload</code>, тикет портала, когда через него что-то проходит, и эндер-жемчуг в полёте. Воронки, редстоун-часы и фермы не грузят ничего: они работают, только если чанк уже загружен по другой причине. Ни один из этих тикетов на диск не попадает, поэтому <em>чанклоадеры</em> выводятся по сущности, которая их создаёт; модовые зависят от работающего сервера и следов не оставляют вовсе.',
             'foot': 'Вся обработка происходит в вашем браузере: файлы никогда не покидают ваш компьютер.',
         },
     };

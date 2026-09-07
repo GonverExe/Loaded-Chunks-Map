@@ -1,0 +1,281 @@
+/*
+ * Barra lateral: tarjetas, controles y avisos.
+ *
+ * La rejilla de la aplicación y todo lo que va en la columna izquierda:
+ * fuentes de carga, capas, resumen y avisos.
+ */
+
+/* ---------- App ---------- */
+#app {
+    border-bottom: 1px solid var(--line);
+}
+.app-grid {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    gap: 18px;
+    padding: 18px;
+    align-items: start;
+}
+@media (max-width: 900px) {
+    .app-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.panel {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+.card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 14px;
+    box-shadow: var(--shadow);
+}
+.card h2 {
+    margin: 0 0 10px;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+}
+
+/* Tarjeta plegable: el título hace de tirador y el cuerpo solo ocupa sitio si se abre. */
+.card.fold > summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    cursor: pointer;
+    list-style: none;
+    color: var(--muted);
+}
+.card.fold > summary::-webkit-details-marker {
+    display: none;
+}
+.card.fold > summary h2 {
+    margin: 0;
+}
+.card.fold[open] > summary {
+    margin-bottom: 10px;
+}
+.card.fold[open] > summary .caret {
+    transform: rotate(180deg);
+}
+.card dl {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 4px 12px;
+    margin: 0;
+    font-size: 13px;
+}
+.card dt {
+    color: var(--muted);
+}
+.card dd {
+    margin: 0;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+/*
+ * Texto con códigos § del juego. El color lo pone cada <span> con la paleta de
+ * Minecraft; aquí solo va la sombra, que además de imitar la del juego evita
+ * que el negro (§0) o el blanco (§f) se pierdan contra el fondo del tema.
+ */
+.mc {
+    text-shadow:
+        0 1px 0 rgba(0, 0, 0, 0.6),
+        0 0 3px rgba(255, 255, 255, 0.18);
+}
+:root[data-theme='light'] .mc {
+    text-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.8),
+        0 0 3px rgba(0, 0, 0, 0.35);
+}
+/* §k: en el juego son caracteres cambiando; aquí basta con que no se lea. */
+.mc-obf {
+    filter: blur(2.2px);
+}
+
+select,
+.chk,
+.range {
+    width: 100%;
+}
+select {
+    font: inherit;
+    background: var(--bg-soft);
+    color: var(--text);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 7px 9px;
+    /* Sin esto el desplegable nativo (la lista de opciones) ignora el tema
+       de la página y el navegador la pinta con sus colores por defecto. */
+    color-scheme: dark;
+}
+:root[data-theme='light'] select {
+    color-scheme: light;
+}
+/* Las opciones sí se pueden colorear: así la lista desplegada usa el mismo
+   fondo y texto que el resto de la interfaz, no el gris/blanco del sistema. */
+select option {
+    background: var(--bg-soft);
+    color: var(--text);
+}
+/* Selector de dimensión, arriba de la tarjeta Capas: separado de la primera capa. */
+#dimSelect {
+    width: 100%;
+    margin-bottom: 10px;
+}
+select.small {
+    padding: 4px 8px;
+    font-size: 13px;
+    width: auto;
+}
+.chk {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    margin: 7px 0;
+    cursor: pointer;
+}
+.chk input {
+    accent-color: var(--accent);
+}
+.chk.sub {
+    font-size: 13px;
+    color: var(--muted);
+    margin-left: 2px;
+}
+.range {
+    display: block;
+    font-size: 13px;
+    color: var(--muted);
+    margin: 6px 0 2px;
+}
+.range input {
+    width: 100%;
+    accent-color: var(--accent);
+}
+.range output {
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+}
+.note {
+    font-size: 12px;
+    color: var(--muted);
+    margin: 4px 0 12px;
+}
+
+.dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 3px;
+    display: inline-block;
+}
+.dot.spawn,
+.sw.spawn {
+    background: var(--spawn);
+}
+.dot.player,
+.sw.player {
+    background: var(--player);
+}
+.dot.force,
+.sw.force {
+    background: var(--force);
+}
+.dot.loader,
+.sw.loader {
+    background: var(--loader);
+}
+.sw.terrain {
+    background: linear-gradient(135deg, #7fb238 55%, #4040ff);
+}
+/* El world border es una línea en el mapa, así que su muestra también lo es. */
+.sw.wborder {
+    background: var(--map-worldborder);
+    height: 3px;
+    width: 12px;
+    border-radius: 2px;
+}
+.mode-select {
+    margin: 2px 0 8px;
+    padding: 5px 8px;
+    font-size: 13px;
+}
+/*
+ * Avisos de progreso, arriba a la izquierda del mapa, para no tapar la barra
+ * de escala que el canvas dibuja abajo a la izquierda. No capturan el ratón
+ * para no estorbar al arrastre.
+ */
+.map-status {
+    position: absolute;
+    left: 12px;
+    top: 12px;
+    z-index: 5;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    pointer-events: none;
+}
+.terrain-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 5px 10px;
+    font-size: 12px;
+    color: var(--text-soft);
+    white-space: nowrap;
+    /* Chapa propia: el aviso cae sobre el terreno y sin fondo no se leería. */
+    background: var(--tooltip-bg);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    box-shadow: 0 2px 10px rgba(3, 8, 20, 0.25);
+}
+.spin {
+    width: 11px;
+    height: 11px;
+    flex: none;
+    border: 2px solid var(--line);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.75s linear infinite;
+}
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+/* Barrita fina con el avance de las regiones ya renderizadas. */
+.terrain-status .meter {
+    width: 54px;
+    height: 4px;
+    border-radius: 999px;
+    background: var(--line);
+    overflow: hidden;
+}
+.terrain-status .meter i {
+    display: block;
+    height: 100%;
+    width: 0;
+    background: var(--accent);
+    transition: width 0.2s ease;
+}
+@media (prefers-reduced-motion: reduce) {
+    .spin {
+        animation-duration: 2.4s;
+    }
+}
+
+#warnList {
+    margin: 0;
+    padding-left: 18px;
+    font-size: 12px;
+    color: var(--warn);
+}
