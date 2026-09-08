@@ -108,6 +108,8 @@
             rows.push(['info.name', '<span class="mc">' + mcFormat(App.world.name) + '</span>']);
         }
         if (App.world.versionName) rows.push(['info.version', escapeHtml(App.world.versionName)]);
+        if (App.world.seed)
+            rows.push(['info.seed', '<span class="seed">' + escapeHtml(App.world.seed) + '</span>']);
         if (App.world.lastPlayed)
             rows.push([
                 'info.lastPlayed',

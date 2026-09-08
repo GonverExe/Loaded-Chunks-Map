@@ -168,7 +168,8 @@
 }
 .cols {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    /* 300px deja tres columnas en 1080: las seis tarjetas caen en 3 + 3. */
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
     gap: 18px;
 }
 .cols article {

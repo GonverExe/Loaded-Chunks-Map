@@ -352,11 +352,25 @@
     }
 
     /* Lee la lista de ficheros (input webkitdirectory o drag&drop) y construye el mundo. */
+    /*
+     * Semilla del level.dat. Desde 1.16 vive en WorldGenSettings; antes estaba
+     * suelta en RandomSeed. Es un long, así que el parser la da como BigInt y
+     * aquí se pasa a texto: es un identificador que se copia y se pega, no un
+     * número con el que se opere, y Number la redondearía.
+     */
+    function seedFromNBT(d) {
+        let raw = null;
+        if (d.WorldGenSettings && d.WorldGenSettings.seed != null) raw = d.WorldGenSettings.seed;
+        else if (d.RandomSeed != null) raw = d.RandomSeed;
+        return raw == null ? null : String(raw);
+    }
+
     async function load(files, onProgress) {
         const world = {
             name: null,
             versionName: null,
             dataVersion: null,
+            seed: null, // semilla del level.dat, como texto
             spawn: null,
             spawnChunkRadius: null, // gamerule leída del level.dat, si existe
             border: null, // world border del level.dat, en bloques
@@ -421,6 +435,7 @@
                 world.name = d.LevelName || null;
                 world.versionName = (d.Version && d.Version.Name) || null;
                 world.dataVersion = d.DataVersion != null ? Number(d.DataVersion) : null;
+                world.seed = seedFromNBT(d);
                 world.lastPlayed = d.LastPlayed != null ? Number(d.LastPlayed) : null;
                 if (d.SpawnX != null) {
                     world.spawn = {
@@ -597,6 +612,7 @@
                 world.name = d.LevelName || world.name;
                 world.versionName = (d.Version && d.Version.Name) || world.versionName;
                 world.dataVersion = d.DataVersion != null ? Number(d.DataVersion) : null;
+                world.seed = seedFromNBT(d) || world.seed;
                 world.lastPlayed = d.LastPlayed != null ? Number(d.LastPlayed) : world.lastPlayed;
                 if (d.SpawnX != null) {
                     world.spawn = {

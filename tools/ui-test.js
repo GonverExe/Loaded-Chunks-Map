@@ -53,6 +53,11 @@ function comprobar(que, condicion, detalle) {
     comprobar('la tarjeta del mundo tiene filas', info.indexOf('<dt>') >= 0, info.slice(0, 60));
     comprobar('el nombre pasa por los códigos §', info.indexOf('class="mc"') >= 0);
     comprobar('el § no se cuela como texto', info.indexOf('§') < 0);
+    comprobar(
+        'la semilla sale entera, sin redondear',
+        info.indexOf('-4172144997902289642') >= 0,
+        info.slice(0, 200),
+    );
 
     // 5. Dimensiones, resumen y notas de la barra lateral.
     comprobar('el selector de dimensión tiene opciones', dom.el('dimSelect').options.length > 0);

@@ -81,6 +81,18 @@
 }
 
 /*
+ * La semilla es lo único de la tarjeta que se copia y se pega. Monoespaciada
+ * para leerla dígito a dígito, con salto donde haga falta para que un long de
+ * veinte cifras no ensanche el panel, y de una pieza al seleccionarla.
+ */
+.seed {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 12px;
+    overflow-wrap: anywhere;
+    user-select: all;
+}
+
+/*
  * Texto con códigos § del juego. El color lo pone cada <span> con la paleta de
  * Minecraft; aquí solo va la sombra, que además de imitar la del juego evita
  * que el negro (§0) o el blanco (§f) se pierdan contra el fondo del tema.

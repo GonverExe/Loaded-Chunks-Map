@@ -154,6 +154,17 @@ function mundo(opciones) {
                     t: TAG.COMPOUND,
                     v: { Name: { t: TAG.STRING, v: o.version || '1.20.4' } },
                 },
+                /* Semilla en el sitio moderno (1.16+). Se sale de lo que aguanta
+                   un Number, justo para que se note si alguien la redondea. */
+                WorldGenSettings: {
+                    t: TAG.COMPOUND,
+                    v: {
+                        seed: {
+                            t: TAG.LONG,
+                            v: o.seed != null ? o.seed : -4172144997902289642n,
+                        },
+                    },
+                },
                 Player: {
                     t: TAG.COMPOUND,
                     v: {

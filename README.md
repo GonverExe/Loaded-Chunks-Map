@@ -38,7 +38,7 @@ The floating bar in the top right corner keeps two preferences in `localStorage`
   until you pick one by hand. The map canvas takes its palette from the CSS variables, so the map
   switches along with the rest of the page.
 - **Language**: Spanish, English, Portuguese, Simplified Chinese or Russian, applied live (tooltip,
-  summary and warnings included). It defaults to the browser language.
+  summary and warnings included). It opens in English and remembers your choice.
 
 Every string lives in `js/i18n.js`; adding a language is a matter of copying one block and translating it.
 
@@ -142,7 +142,7 @@ La barra flotante de la esquina superior derecha guarda dos preferencias en `loc
   mientras no elijas uno a mano. El canvas del mapa lee su paleta de las variables CSS, así que el mapa
   cambia con el resto de la página.
 - **Idioma**: español, inglés, portugués, chino simplificado o ruso, aplicado en caliente (también al
-  tooltip, las estadísticas y los avisos). Por defecto usa el del navegador.
+  tooltip, las estadísticas y los avisos). Abre en inglés y recuerda lo que elijas.
 
 Los textos viven todos en `js/i18n.js`; para añadir un idioma basta con copiar un bloque y traducirlo.
 
@@ -245,7 +245,7 @@ A barra flutuante do canto superior direito guarda duas preferências em `localS
   enquanto você não escolher um na mão. O canvas do mapa lê a paleta das variáveis CSS, então o mapa
   muda junto com o resto da página.
 - **Idioma**: espanhol, inglês, português, chinês simplificado ou russo, aplicado na hora (inclusive no
-  tooltip, nas estatísticas e nos avisos). Por padrão usa o do navegador.
+  tooltip, nas estatísticas e nos avisos). Abre em inglês e lembra o que você escolher.
 
 Todos os textos ficam em `js/i18n.js`; para acrescentar um idioma basta copiar um bloco e traduzi-lo.
 
@@ -342,8 +342,8 @@ mais um anel apenas carregado (borda).
 
 - **主题**：浅色或深色。默认跟随系统（`prefers-color-scheme`）并随之变化，直到你手动选择为止。地图画布
   从 CSS 变量读取配色，所以地图会和页面其余部分一起切换。
-- **语言**：西班牙语、英语、葡萄牙语、简体中文或俄语，即时生效（包括提示框、统计和警告）。默认使用浏览器
-  的语言。
+- **语言**：西班牙语、英语、葡萄牙语、简体中文或俄语，即时生效（包括提示框、统计和警告）。默认为英语，并会
+  记住你的选择。
 
 所有文本都在 `js/i18n.js` 里；要增加一种语言，复制一个语言块翻译即可。
 
@@ -438,7 +438,7 @@ Selector. Ячейка биома (4x4x4) берётся на поверхнос
   вместе с ней, пока вы не выберете тему вручную. Холст карты берёт палитру из CSS-переменных, поэтому
   карта переключается вместе со всей страницей.
 - **Язык**: испанский, английский, португальский, китайский (упрощённый) или русский, применяется сразу
-  (включая всплывающую подсказку, сводку и предупреждения). По умолчанию берётся язык браузера.
+  (включая всплывающую подсказку, сводку и предупреждения). Открывается на английском и запоминает выбор.
 
 Все тексты лежат в `js/i18n.js`; чтобы добавить язык, достаточно скопировать блок и перевести его.
 

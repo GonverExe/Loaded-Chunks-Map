@@ -7,7 +7,7 @@
             'html.lang': 'es',
             'page.title': 'Loaded Chunks Map — mapa de chunks cargados de tu mundo de Minecraft',
             'page.description':
-                'Suelta la carpeta de tu mundo de Minecraft Java y mira qué chunks quedan cargados: spawn chunks, /forceload y el área alrededor de cada jugador. Todo en tu navegador, sin subir nada.',
+                'Suelta la carpeta de tu mundo de Minecraft Java y mira qué chunks quedan cargados: spawn chunks, /forceload, el área alrededor de cada jugador y los chunk loaders. Con mapa del terreno, biomas y estructuras. Todo en tu navegador, sin subir nada.',
             'settings.theme.toDark': 'Cambiar a modo oscuro',
             'settings.theme.toLight': 'Cambiar a modo claro',
             'settings.language': 'Idioma',
@@ -15,7 +15,7 @@
             'hero.title':
                 'Mira qué <span class="grad">chunks</span> se quedan cargados en tu mundo',
             'hero.lead':
-                'Suelta la carpeta de tu mundo de <strong>Minecraft: Java Edition</strong> (la que está dentro de <code>saves/</code>) y te dibujo el mapa: <strong>spawn chunks</strong>, chunks fijados con <code>/forceload</code> y el área que mantiene cargada cada jugador guardado, sobre el terreno que ya has generado.',
+                'Suelta la carpeta de tu mundo de <strong>Minecraft: Java Edition</strong> (la que está dentro de <code>saves/</code>) y te dibujo el mapa: <strong>spawn chunks</strong>, chunks fijados con <code>/forceload</code>, el área que mantiene cargada cada jugador guardado y los <strong>chunk loaders</strong> que dejan rastro, sobre el terreno que ya has generado. Si el navegador lo permite, sigue la carpeta en vivo y se actualiza solo cuando el juego guarda.',
             'drop.title': '<strong>Arrastra aquí la carpeta del mundo</strong> o',
             'drop.pickDir': 'Elegir carpeta…',
             'drop.hint':
@@ -126,6 +126,7 @@
             'loading.file': 'Leyendo {file} ({done}/{total})',
             'info.name': 'Nombre',
             'info.version': 'Versión',
+            'info.seed': 'Semilla',
             'info.lastPlayed': 'Última partida',
             'stats.loaded': 'Cargados',
             'stats.entity': '· entity ticking',
@@ -175,9 +176,15 @@
             'explain.players.h': 'Jugadores',
             'explain.players.p':
                 'Cada jugador carga los chunks a su alrededor según la distancia de simulación del servidor. Leo su última posición de <code>playerdata/*.dat</code> (o del <code>Player</code> de <code>level.dat</code> en un mundo de un jugador) y dibujo esa zona.',
+            'explain.loaders.h': 'Chunk loaders',
+            'explain.loaders.p':
+                'Ningún ticket de estos llega al disco, así que salen deducidos de la entidad que los provoca: una perla de ender guardada en pleno vuelo (<code>entities/r.X.Z.mca</code>, 1.17+) o cualquier cosa parada sobre un portal del Nether (<code>poi/</code> más la entidad encima). Eso cubre lo que el juego vanilla puede cargar de verdad; los de mods dependen del servidor en marcha y no dejan rastro. El radio es un control de la interfaz.',
             'explain.terrain.h': 'Terreno generado',
             'explain.terrain.p':
                 'De cada <code>region/r.X.Z.mca</code> leo la cabecera para saber qué chunks existen y cuándo se guardaron. Con la capa de terreno activada leo además los bloques de las regiones que estás mirando y dibujo el mapa del mundo, al estilo de MCA Selector: se toma el bloque de superficie de cada columna, se colorea y se sombrea según el desnivel. También puedes verlo como <strong>mapa de biomas</strong>, con un color plano por bioma, en cualquier dimensión.',
+            'explain.struct.h': 'Estructuras',
+            'explain.struct.p':
+                'De esos mismos region files salgo también con las estructuras que arrancan en cada chunk, agrupadas en familias: aldeas, minas, fortalezas, monumentos, portales en ruinas… Solo se escanean las regiones que estás mirando, y solo si has activado alguna familia en el desplegable, así que el mapa se va rellenando conforme te mueves.',
             'explain.fine': 'En vanilla lo único que carga chunks es el spawn, los jugadores, <code>/forceload</code>, el ticket que crea un portal cuando algo lo cruza y la perla de ender mientras vuela. Los hoppers, los relojes de redstone y las granjas no cargan nada: solo funcionan si el chunk ya está cargado por otro motivo. De todo eso, en el disco no queda ni un ticket, así que los <em>chunk loaders</em> se deducen de la entidad que los provoca; los de mods dependen del servidor en marcha y no dejan ni rastro.',
             'foot': 'Todo el procesado ocurre en tu navegador: los archivos nunca salen de tu ordenador.',
         },
@@ -187,14 +194,14 @@
             'page.title':
                 'Loaded Chunks Map — see which chunks stay loaded in your Minecraft world',
             'page.description':
-                'Drop your Minecraft Java world folder and see which chunks stay loaded: spawn chunks, /forceload and the area around each player. All in your browser, nothing uploaded.',
+                'Drop your Minecraft Java world folder and see which chunks stay loaded: spawn chunks, /forceload, the area around each player and chunk loaders. With a terrain map, biomes and structures. All in your browser, nothing uploaded.',
             'settings.theme.toDark': 'Switch to dark mode',
             'settings.theme.toLight': 'Switch to light mode',
             'settings.language': 'Language',
             'hero.badge': '100&nbsp;% in your browser · nothing gets uploaded',
             'hero.title': 'See which <span class="grad">chunks</span> stay loaded in your world',
             'hero.lead':
-                'Drop your <strong>Minecraft: Java Edition</strong> world folder (the one inside <code>saves/</code>) and I will draw the map: <strong>spawn chunks</strong>, chunks pinned with <code>/forceload</code> and the area each saved player keeps loaded, on top of the terrain you have already generated.',
+                'Drop your <strong>Minecraft: Java Edition</strong> world folder (the one inside <code>saves/</code>) and I will draw the map: <strong>spawn chunks</strong>, chunks pinned with <code>/forceload</code>, the area each saved player keeps loaded and the <strong>chunk loaders</strong> that leave a trace, on top of the terrain you have already generated. If your browser allows it, it follows the folder live and refreshes on its own whenever the game saves.',
             'drop.title': '<strong>Drop the world folder here</strong> or',
             'drop.pickDir': 'Choose folder…',
             'drop.hint':
@@ -304,6 +311,7 @@
             'loading.file': 'Reading {file} ({done}/{total})',
             'info.name': 'Name',
             'info.version': 'Version',
+            'info.seed': 'Seed',
             'info.lastPlayed': 'Last played',
             'stats.loaded': 'Loaded',
             'stats.entity': '· entity ticking',
@@ -353,9 +361,15 @@
             'explain.players.h': 'Players',
             'explain.players.p':
                 'Every player loads the chunks around them according to the server simulation distance. I read their last position from <code>playerdata/*.dat</code> (or from <code>Player</code> in <code>level.dat</code> for a singleplayer world) and draw that area.',
+            'explain.loaders.h': 'Chunk loaders',
+            'explain.loaders.p':
+                'No ticket of theirs ever reaches the disk, so they are inferred from the entity behind them: an ender pearl saved mid-flight (<code>entities/r.X.Z.mca</code>, 1.17+) or anything sitting on a Nether portal (<code>poi/</code> plus the entity on top of it). That covers what vanilla can actually load with; modded ones depend on the running server and leave no trace. The radius is a UI control.',
             'explain.terrain.h': 'Generated terrain',
             'explain.terrain.p':
                 'From each <code>region/r.X.Z.mca</code> I read the header to know which chunks exist and when they were saved. With the terrain layer on I also read the blocks of the regions you are looking at and draw the world map, in the style of MCA Selector: the surface block of each column, coloured and shaded by slope. You can also switch it to a <strong>biome map</strong>, one flat colour per biome, in any dimension.',
+            'explain.struct.h': 'Structures',
+            'explain.struct.p':
+                'Those same region files also give me the structures that start in each chunk, grouped into families: villages, mineshafts, strongholds, monuments, ruined portals… Only the regions you are looking at are scanned, and only if you have turned on a family in the dropdown, so the map fills in as you move around.',
             'explain.fine': 'In vanilla the only things that load chunks are the spawn, players, <code>/forceload</code>, the ticket a portal creates when something crosses it, and an ender pearl while it flies. Hoppers, redstone clocks and farms load nothing: they only run if the chunk is already loaded for some other reason. None of that leaves a ticket on disk, so <em>chunk loaders</em> are inferred from the entity behind them; modded ones depend on the running server and leave no trace at all.',
             'foot': 'Everything is processed in your browser: the files never leave your computer.',
         },
@@ -365,7 +379,7 @@
             'page.title':
                 'Loaded Chunks Map — mapa dos chunks carregados do seu mundo de Minecraft',
             'page.description':
-                'Solte a pasta do seu mundo de Minecraft Java e veja quais chunks ficam carregados: spawn chunks, /forceload e a área ao redor de cada jogador. Tudo no seu navegador, sem enviar nada.',
+                'Solte a pasta do seu mundo de Minecraft Java e veja quais chunks ficam carregados: spawn chunks, /forceload, a área ao redor de cada jogador e os chunk loaders. Com mapa do terreno, biomas e estruturas. Tudo no seu navegador, sem enviar nada.',
             'settings.theme.toDark': 'Mudar para o modo escuro',
             'settings.theme.toLight': 'Mudar para o modo claro',
             'settings.language': 'Idioma',
@@ -373,7 +387,7 @@
             'hero.title':
                 'Veja quais <span class="grad">chunks</span> ficam carregados no seu mundo',
             'hero.lead':
-                'Solte a pasta do seu mundo de <strong>Minecraft: Java Edition</strong> (a que fica dentro de <code>saves/</code>) e eu desenho o mapa: <strong>spawn chunks</strong>, chunks fixados com <code>/forceload</code> e a área que cada jogador salvo mantém carregada, sobre o terreno que você já gerou.',
+                'Solte a pasta do seu mundo de <strong>Minecraft: Java Edition</strong> (a que fica dentro de <code>saves/</code>) e eu desenho o mapa: <strong>spawn chunks</strong>, chunks fixados com <code>/forceload</code>, a área que cada jogador salvo mantém carregada e os <strong>chunk loaders</strong> que deixam rastro, sobre o terreno que você já gerou. Se o navegador permitir, ele acompanha a pasta ao vivo e se atualiza sozinho quando o jogo salva.',
             'drop.title': '<strong>Arraste aqui a pasta do mundo</strong> ou',
             'drop.pickDir': 'Escolher pasta…',
             'drop.hint':
@@ -483,6 +497,7 @@
             'loading.file': 'Lendo {file} ({done}/{total})',
             'info.name': 'Nome',
             'info.version': 'Versão',
+            'info.seed': 'Semente',
             'info.lastPlayed': 'Última partida',
             'stats.loaded': 'Carregados',
             'stats.entity': '· entity ticking',
@@ -532,9 +547,15 @@
             'explain.players.h': 'Jogadores',
             'explain.players.p':
                 'Cada jogador carrega os chunks ao seu redor conforme a distância de simulação do servidor. Leio a última posição em <code>playerdata/*.dat</code> (ou no <code>Player</code> do <code>level.dat</code> num mundo de um jogador) e desenho essa área.',
+            'explain.loaders.h': 'Chunk loaders',
+            'explain.loaders.p':
+                'Nenhum ticket deles chega ao disco, então são deduzidos da entidade por trás deles: uma pérola do end salva em pleno voo (<code>entities/r.X.Z.mca</code>, 1.17+) ou qualquer coisa parada sobre um portal do Nether (<code>poi/</code> mais a entidade em cima). Isso cobre o que o vanilla consegue carregar de verdade; os de mods dependem do servidor em execução e não deixam rastro. O raio é um controle da interface.',
             'explain.terrain.h': 'Terreno gerado',
             'explain.terrain.p':
                 'De cada <code>region/r.X.Z.mca</code> leio o cabeçalho para saber quais chunks existem e quando foram salvos. Com a camada de terreno ligada também leio os blocos das regiões que você está vendo e desenho o mapa do mundo, no estilo do MCA Selector: o bloco de superfície de cada coluna, colorido e sombreado pelo desnível. Também dá para ver como <strong>mapa de biomas</strong>, com uma cor sólida por bioma, em qualquer dimensão.',
+            'explain.struct.h': 'Estruturas',
+            'explain.struct.p':
+                'Desses mesmos region files eu também tiro as estruturas que começam em cada chunk, agrupadas em famílias: aldeias, minas, fortalezas, monumentos, portais em ruínas… Só são escaneadas as regiões que você está vendo, e só se você tiver ligado alguma família no menu, então o mapa vai se preenchendo conforme você anda.',
             'explain.fine': 'No vanilla, a única coisa que carrega chunks é o spawn, os jogadores, o <code>/forceload</code>, o ticket que um portal cria quando algo o atravessa e a pérola do end enquanto voa. Hoppers, relógios de redstone e granjas não carregam nada: só funcionam se o chunk já estiver carregado por outro motivo. Nada disso deixa ticket no disco, então os <em>chunk loaders</em> são deduzidos da entidade por trás deles; os de mods dependem do servidor em execução e não deixam rastro nenhum.',
             'foot': 'Todo o processamento acontece no seu navegador: os arquivos nunca saem do seu computador.',
         },
@@ -543,14 +564,14 @@
             'html.lang': 'zh-CN',
             'page.title': 'Loaded Chunks Map — 查看你的 Minecraft 世界中保持加载的区块',
             'page.description':
-                '拖入你的 Minecraft Java 版世界文件夹，看看哪些区块会保持加载：出生点区块、/forceload 以及每个玩家周围的区域。全部在浏览器中完成，不上传任何文件。',
+                '拖入你的 Minecraft Java 版世界文件夹，看看哪些区块会保持加载：出生点区块、/forceload、每个玩家周围的区域以及区块加载器。附带地形图、生物群系和结构。全部在浏览器中完成，不上传任何文件。',
             'settings.theme.toDark': '切换到深色模式',
             'settings.theme.toLight': '切换到浅色模式',
             'settings.language': '语言',
             'hero.badge': '100&nbsp;% 在你的浏览器中运行 · 不上传任何文件',
             'hero.title': '看看你的世界里哪些<span class="grad">区块</span>会保持加载',
             'hero.lead':
-                '拖入你的 <strong>Minecraft：Java 版</strong>世界文件夹（<code>saves/</code> 里面的那个），我来绘制地图：<strong>出生点区块</strong>、用 <code>/forceload</code> 固定的区块，以及每个已保存玩家周围保持加载的区域，叠加在你已经生成的地形上。',
+                '拖入你的 <strong>Minecraft：Java 版</strong>世界文件夹（<code>saves/</code> 里面的那个），我来绘制地图：<strong>出生点区块</strong>、用 <code>/forceload</code> 固定的区块、每个已保存玩家周围保持加载的区域，以及在磁盘上留下痕迹的<strong>区块加载器</strong>，叠加在你已经生成的地形上。如果浏览器支持，它还会实时跟踪该文件夹，在游戏保存时自动刷新。',
             'drop.title': '<strong>把世界文件夹拖到这里</strong>，或者',
             'drop.pickDir': '选择文件夹…',
             'drop.hint':
@@ -658,6 +679,7 @@
             'loading.file': '正在读取 {file}（{done}/{total}）',
             'info.name': '名称',
             'info.version': '版本',
+            'info.seed': '种子',
             'info.lastPlayed': '上次游玩',
             'stats.loaded': '已加载',
             'stats.entity': '· entity ticking',
@@ -706,9 +728,15 @@
             'explain.players.h': '玩家',
             'explain.players.p':
                 '每个玩家都会按服务器的模拟距离加载周围的区块。我从 <code>playerdata/*.dat</code>（单人世界则是 <code>level.dat</code> 里的 <code>Player</code>）读取他们最后的位置，并画出那片区域。',
+            'explain.loaders.h': '区块加载器',
+            'explain.loaders.p':
+                '它们的 ticket 从不写入磁盘，所以只能从背后的实体推算：存档里飞行中的末影珍珠（<code>entities/r.X.Z.mca</code>，1.17+），或者停在下界传送门上的任何实体（<code>poi/</code> 加上面的实体）。这已经涵盖了原版真正能加载区块的方式；模组的加载器依赖运行中的服务器，不留痕迹。半径是界面上的可调项。',
             'explain.terrain.h': '已生成的地形',
             'explain.terrain.p':
                 '每个 <code>region/r.X.Z.mca</code> 我都会读取文件头，知道哪些区块存在、上次保存于何时。打开地形图层后，我还会读取你正在查看的区域的方块并绘制世界地图，风格类似 MCA Selector：取每一列的表面方块，上色并按高低差添加阴影。你也可以切换到<strong>生物群系地图</strong>，每个生物群系一种纯色，任意维度都可用。',
+            'explain.struct.h': '结构',
+            'explain.struct.p':
+                '同样的这些区域文件里，我还会取出每个区块中起始的结构，并按族归类：村庄、废弃矿井、要塞、海底神殿、废弃传送门……只扫描你正在查看的区域，而且只有在下拉菜单里启用了某一族时才扫描，所以地图会随着你的移动逐渐填充。',
             'explain.fine': '在原版里，只有出生点、玩家、<code>/forceload</code>、实体穿过传送门时产生的 ticket，以及飞行中的末影珍珠会加载区块。漏斗、红石时钟和农场什么都不加载：它们只有在区块已经因别的原因被加载时才会运行。这些都不会在磁盘上留下 ticket，所以<em>区块加载器</em>是根据背后的实体推算出来的；模组的取决于运行中的服务器，完全不留痕迹。',
             'foot': '所有处理都在你的浏览器中完成：文件不会离开你的电脑。',
         },
@@ -717,7 +745,7 @@
             'html.lang': 'ru',
             'page.title': 'Loaded Chunks Map — карта загруженных чанков вашего мира Minecraft',
             'page.description':
-                'Перетащите папку мира Minecraft Java и посмотрите, какие чанки остаются загруженными: спавн-чанки, /forceload и область вокруг каждого игрока. Всё в браузере, ничего никуда не отправляется.',
+                'Перетащите папку мира Minecraft Java и посмотрите, какие чанки остаются загруженными: спавн-чанки, /forceload, область вокруг каждого игрока и чанклоадеры. С картой рельефа, биомами и структурами. Всё в браузере, ничего никуда не отправляется.',
             'settings.theme.toDark': 'Переключить на тёмную тему',
             'settings.theme.toLight': 'Переключить на светлую тему',
             'settings.language': 'Язык',
@@ -725,7 +753,7 @@
             'hero.title':
                 'Посмотрите, какие <span class="grad">чанки</span> остаются загруженными в вашем мире',
             'hero.lead':
-                'Перетащите папку мира <strong>Minecraft: Java Edition</strong> (ту, что внутри <code>saves/</code>), и я нарисую карту: <strong>спавн-чанки</strong>, чанки, закреплённые через <code>/forceload</code>, и область, которую держит загруженной каждый сохранённый игрок, поверх уже сгенерированной местности.',
+                'Перетащите папку мира <strong>Minecraft: Java Edition</strong> (ту, что внутри <code>saves/</code>), и я нарисую карту: <strong>спавн-чанки</strong>, чанки, закреплённые через <code>/forceload</code>, область, которую держит загруженной каждый сохранённый игрок, и <strong>чанклоадеры</strong>, оставляющие след на диске, поверх уже сгенерированной местности. Если браузер позволяет, страница следит за папкой вживую и обновляется сама, когда игра сохраняется.',
             'drop.title': '<strong>Перетащите сюда папку мира</strong> или',
             'drop.pickDir': 'Выбрать папку…',
             'drop.hint':
@@ -835,6 +863,7 @@
             'loading.file': 'Чтение {file} ({done}/{total})',
             'info.name': 'Название',
             'info.version': 'Версия',
+            'info.seed': 'Сид',
             'info.lastPlayed': 'Последняя игра',
             'stats.loaded': 'Загружено',
             'stats.entity': '· entity ticking',
@@ -884,31 +913,38 @@
             'explain.players.h': 'Игроки',
             'explain.players.p':
                 'Каждый игрок загружает чанки вокруг себя в пределах дистанции симуляции сервера. Я читаю его последнюю позицию из <code>playerdata/*.dat</code> (или из <code>Player</code> в <code>level.dat</code> для одиночного мира) и рисую эту область.',
+            'explain.loaders.h': 'Чанклоадеры',
+            'explain.loaders.p':
+                'Ни один их тикет на диск не попадает, поэтому они выводятся по сущности, которая их создаёт: эндер-жемчуг, сохранённый в полёте (<code>entities/r.X.Z.mca</code>, 1.17+), или что угодно, стоящее на портале в Нижний мир (<code>poi/</code> плюс сущность на нём). Это покрывает всё, чем ваниль реально грузит чанки; модовые зависят от работающего сервера и следов не оставляют. Радиус задаётся в интерфейсе.',
             'explain.terrain.h': 'Сгенерированная местность',
             'explain.terrain.p':
                 'Из каждого <code>region/r.X.Z.mca</code> я читаю заголовок: какие чанки существуют и когда их сохранили. С включённым слоем рельефа я также читаю блоки регионов, которые вы смотрите, и рисую карту мира в стиле MCA Selector: берётся поверхностный блок каждой колонки, раскрашивается и затеняется по перепаду высот. Можно переключиться и на <strong>карту биомов</strong> — по одному цвету на биом, в любом измерении.',
+            'explain.struct.h': 'Структуры',
+            'explain.struct.p':
+                'Из тех же самых region-файлов я достаю и структуры, которые начинаются в каждом чанке, сгруппированные по семействам: деревни, шахты, крепости, монументы, разрушенные порталы… Сканируются только те регионы, которые вы смотрите, и только если в выпадающем списке включено хотя бы одно семейство, так что карта заполняется по мере перемещения.',
             'explain.fine': 'В ванили чанки грузят только спавн, игроки, <code>/forceload</code>, тикет портала, когда через него что-то проходит, и эндер-жемчуг в полёте. Воронки, редстоун-часы и фермы не грузят ничего: они работают, только если чанк уже загружен по другой причине. Ни один из этих тикетов на диск не попадает, поэтому <em>чанклоадеры</em> выводятся по сущности, которая их создаёт; модовые зависят от работающего сервера и следов не оставляют вовсе.',
             'foot': 'Вся обработка происходит в вашем браузере: файлы никогда не покидают ваш компьютер.',
         },
     };
 
     const STORE_KEY = 'lcm.lang';
-    let current = 'es';
+    const DEFAULT = 'en';
+    let current = DEFAULT;
     const listeners = [];
 
+    /* La página abre siempre en inglés: solo manda lo que el visitante haya
+       elegido antes, no el idioma del navegador. */
     function detect() {
         let saved = null;
         try {
             saved = localStorage.getItem(STORE_KEY);
         } catch (_) {}
-        if (saved && STRINGS[saved]) return saved;
-        const nav = (navigator.language || 'es').slice(0, 2).toLowerCase();
-        return STRINGS[nav] ? nav : 'en';
+        return saved && STRINGS[saved] ? saved : DEFAULT;
     }
 
     function t(key, params) {
         let s = STRINGS[current][key];
-        if (s === undefined) s = STRINGS.es[key];
+        if (s === undefined) s = STRINGS[DEFAULT][key];
         if (s === undefined) return key;
         if (params)
             s = s.replace(/\{(\w+)\}/g, (m, k) => (params[k] !== undefined ? params[k] : m));
@@ -961,7 +997,8 @@
         apply,
         onChange,
         locale,
-        langs: Object.keys(STRINGS),
+        /* Orden del desplegable: el idioma por defecto va primero. */
+        langs: ['en', 'es', 'pt', 'zh', 'ru'],
         names: NAMES,
         get lang() {
             return current;
